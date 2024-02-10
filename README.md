@@ -1,2 +1,2 @@
 # cse434_socket_project
-Nicholas Lambiase, Samarra Ahhmed
+Nicholas Lambiase, Ahmad Samara
