@@ -1,6 +1,3 @@
-# this will be the manager code
-# you are a nerd times 2
-
 import socket
 from dataclasses import dataclass
 import threading
