@@ -38,14 +38,15 @@ def register(peer_name, ipv4_addr, m_port, p_port):
 while True:
     mssg, addr = managerSocket.recvfrom(4096)
     
-	print("Client Message from:\n" +
+    print("Client Message from:\n" +
       "IPV4 Address = " + addr[0] +
       "\nPort Number = " + str(addr[1]) + "\n\n")
 
     parsedMessage = mssg.split("_")
 
-    
-    
+    match parsedMessage[0]:
+        case ""
+
     response = ("This is the Response from the Manager Server").encode('utf-8')
     managerSocket.sendto(response, addr)
 

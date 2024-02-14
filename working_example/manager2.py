@@ -4,7 +4,7 @@ import socket
 managerSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # binding the socket to the host IP and Port to listen and send on
-managerSocket.bind(('10.0.2.15', 9999))
+managerSocket.bind(('127.0.0.1', 9999))
 
 print("Manager up and listening")
 

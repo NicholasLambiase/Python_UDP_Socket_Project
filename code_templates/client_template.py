@@ -19,7 +19,7 @@ while True:
     peerCommand = input()
     match peerCommand:
         case "register":
-            registerMessage = peerCommand[0] + "_" + M_PORT + "_" + P_PORT
+            registerMessage = peerCommand + "_" + M_PORT + "_" + P_PORT
             p_to_m_Socket.sendto(registerMessage.encode(ENCODING_TYPE), (MANAGER_IP_ADDRESS, MANAGER_PORT))
         case "done":
             p_to_p_Socket.close()
@@ -28,3 +28,4 @@ while True:
         case _:
             print("Enter a Vaild Input")
 
+print("Sockets Closed...\nScript Finished")
