@@ -41,20 +41,11 @@ def broadcast():
         while not messages.empty():
             message, addr = messages.get()
             print(message.decode())
-            if addr not in users:
-                users.append(addr)
-            for user in users:
-                try:
-                    if message.decode().startswith("registered:"):
-                        name = message.decode()[message.decode().index(":")+1:]
-                        print(name)
+            parsed_message = message.decode().split(" ")
 
-                        manager_socket.sendto(f"{name} joined".encode(), user)
-                    else:
-                        #manager_socket.sendto(message, user)
-                        pass
-                except:
-                    users.remove(user)
+            match parsed_message[0]:
+
+
 
 
 t1 = threading.Thread(target=receive)

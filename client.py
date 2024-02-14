@@ -15,7 +15,7 @@ ENCODER = "utf-8"
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_socket.bind((SOURCE_IP, SOURCE_PORT))
 
-command = input("register: ")
+command = input("")
 
 
 def receive():
@@ -30,7 +30,7 @@ def receive():
 t = threading.Thread(target=receive)
 t.start()
 
-client_socket.sendto(f"registered: {command}".encode(), (DEST_IP, DEST_PORT))
+client_socket.sendto(f" {command}".encode(), (DEST_IP, DEST_PORT))
 
 while True:
     message = input("")
@@ -38,3 +38,13 @@ while True:
         exit()
     else:
         client_socket.sendto(f"{command}: {message}".encode(), (DEST_IP, DEST_PORT))
+
+
+# if message.decode().startswith("registered:"):
+                    #     name = message.decode()[message.decode().index(":")+1:]
+                    #     print(name)
+                    #
+                    #     manager_socket.sendto(f"{name} joined".encode(), user)
+                    # else:
+                    #     #manager_socket.sendto(message, user)
+                    #     pass
