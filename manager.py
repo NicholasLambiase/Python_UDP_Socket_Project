@@ -9,8 +9,8 @@ import queue
 Free = "free"
 Leader = "leader"
 InDht = "indht"
-HOST_IP = "localhost"
-HOST_PORT = 9000
+HOST_IP = "10.0.2.15"
+HOST_PORT = 9999
 ENCODER = "utf-8"
 PEER_NAME_SIZE = 15
 

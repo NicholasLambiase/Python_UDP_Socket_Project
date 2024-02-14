@@ -6,9 +6,9 @@ import random
 
 # Port range 18,000 to 18,499
 
-DEST_IP = "localhost"
-DEST_PORT = 9000
-SOURCE_IP = "localhost"
+DEST_IP = "10.0.2.15"
+DEST_PORT = 9999
+SOURCE_IP = "192.168.0.116"
 SOURCE_PORT = random.randint(18000, 18499)
 ENCODER = "utf-8"
 
