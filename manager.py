@@ -9,8 +9,8 @@ import queue
 Free = "free"
 Leader = "leader"
 InDht = "indht"
-HOST_IP = "10.0.2.15"
-HOST_PORT = 9999
+HOST_IP = "localhost"
+HOST_PORT = 9998
 ENCODER = "utf-8"
 PEER_NAME_SIZE = 15
 
@@ -31,6 +31,7 @@ def receive():
         try:
             message, addr = manager_socket.recvfrom(1024)
             messages.put((message, addr))
+
         except:
             pass
 
@@ -44,12 +45,14 @@ def broadcast():
                 users.append(addr)
             for user in users:
                 try:
-                    if message.decode().startswith("SIGNUP_TAG:"):
+                    if message.decode().startswith("registered:"):
                         name = message.decode()[message.decode().index(":")+1:]
                         print(name)
+
                         manager_socket.sendto(f"{name} joined".encode(), user)
                     else:
-                        manager_socket.sendto(message, user)
+                        #manager_socket.sendto(message, user)
+                        pass
                 except:
                     users.remove(user)
 
@@ -60,7 +63,7 @@ t2 = threading.Thread(target=broadcast)
 t1.start()
 t2.start()
 
-manager_socket.close()
+
 # @dataclass
 # class Peer:
 #     Peer_Name: str

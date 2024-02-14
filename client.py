@@ -6,16 +6,16 @@ import random
 
 # Port range 18,000 to 18,499
 
-DEST_IP = "10.0.2.15"
-DEST_PORT = 9999
-SOURCE_IP = "192.168.0.116"
+DEST_IP = "localhost"
+DEST_PORT = 9998
+SOURCE_IP = "localhost"
 SOURCE_PORT = random.randint(18000, 18499)
 ENCODER = "utf-8"
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_socket.bind((SOURCE_IP, SOURCE_PORT))
 
-command = input("Nickname: ")
+command = input("register: ")
 
 
 def receive():
@@ -30,7 +30,7 @@ def receive():
 t = threading.Thread(target=receive)
 t.start()
 
-client_socket.sendto(f"SIGNUP_TAG:{command}".encode(), (DEST_IP, DEST_PORT))
+client_socket.sendto(f"registered: {command}".encode(), (DEST_IP, DEST_PORT))
 
 while True:
     message = input("")
