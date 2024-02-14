@@ -10,7 +10,7 @@ Free = "free"
 Leader = "leader"
 InDht = "indht"
 HOST_IP = "localhost"
-HOST_PORT = 9000
+HOST_PORT = 9999
 ENCODER = "utf-8"
 PEER_NAME_SIZE = 15
 
@@ -21,9 +21,9 @@ manager_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 manager_socket.bind((HOST_IP, HOST_PORT))
 
-print("server is up...\n")
-print("\t\t\t===> COM Channel <===\n")
-print("Type 'quit' to exit")
+# print("server is up...\n")
+# print("\t\t\t===> COM Channel <===\n")
+# print("Type 'quit' to exit")
 
 
 def receive():
@@ -45,7 +45,7 @@ def broadcast():
             for user in users:
                 try:
                     if message.decode().startswith("SIGNUP_TAG:"):
-                        name = message.decode()[message.decode.index(":")+1:]
+                        name = message.decode()[message.decode().index(":")+1:]
                         print(name)
                         manager_socket.sendto(f"{name} joined".encode(), user)
                     else:
@@ -60,7 +60,7 @@ t2 = threading.Thread(target=broadcast)
 t1.start()
 t2.start()
 
-manager_socket.close()
+#manager_socket.close()
 # @dataclass
 # class Peer:
 #     Peer_Name: str
