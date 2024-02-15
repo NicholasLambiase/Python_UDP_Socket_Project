@@ -15,25 +15,21 @@ HOST_PORT = 9996
 ENCODER = "utf-8"
 PEER_NAME_SIZE = 15
 
+# Global
 messages = queue.Queue()
 users = []
 list_of_peers = []
 dht_setup_status = False
-
 peer_count = 0
 
+# Setting Up the Socket
 manager_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
 manager_socket.bind((HOST_IP, HOST_PORT))
 
-
-#
-# print("server is up...\n")
-# print("\t\t\t===> COM Channel <===\n")
-# print("Type 'quit' to exit")
-def splitTheMessage(fullMessage):
-    command = fullMessage.split(" ", 1)
-    return command
+# Splits the message rec
+def split_the_message(full_message):
+    split_message = full_message.split(" ", 1)
+    return split_message
 
 
 def register(peer_name, ipv4_addr, m_port, p_port):
@@ -93,7 +89,6 @@ def set_up(peer_name, number_of_peers, year):  # setup-dht logic
 
 # set_up("nick", "3", "1955")
 
-
 def receive():
     while True:
         try:
@@ -112,14 +107,10 @@ def broadcast():
             # All following parsed strings are parameters that will be passed to the command
 
             message, addr = messages.get()
-
             peer_address, peer_port = addr
 
             message = message.decode().strip()
-
-            messageSplit = splitTheMessage(message)
-
-            command, parameters = messageSplit
+            command, parameters= split_the_message(message)
 
             parametersArray = parameters.split(" ")
 
@@ -127,11 +118,9 @@ def broadcast():
                 case "register":
                     resultMessage = register(parametersArray[0], parametersArray[1], parametersArray[2],
                                              parametersArray[3])
-
                     manager_socket.sendto(resultMessage.encode(), (peer_address, peer_port))
                 case "setup-dht":
                     resultMessage = set_up(parametersArray[0], parametersArray[1], parametersArray[2])
-                    #print(resultMessage)
                     manager_socket.sendto(resultMessage.encode(), (peer_address, peer_port))
                 case _:
                     manager_socket.sendto("invalid command".encode(), (peer_address, peer_port))
