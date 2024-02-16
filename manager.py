@@ -1,8 +1,8 @@
 import socket
-
 import threading
 import queue
 import random
+import pickle
 
 # Port range 18,000 to 18,499
 
@@ -31,6 +31,9 @@ def split_the_message(full_message):
     split_message = full_message.split(" ", 1)
     return split_message
 
+def send_message_to_client(peer_address, peer_port, obj_to_send):
+    serialized_obj = pickle.dumps(obj_to_send)
+
 
 def register(peer_name, ipv4_addr, m_port, p_port):
     new_peer = {"name": peer_name, "ipv4_addr": ipv4_addr, "m_port": m_port, "p_port": p_port, "status": Free}
@@ -48,8 +51,10 @@ def register(peer_name, ipv4_addr, m_port, p_port):
 
 def set_up(peer_name, number_of_peers, year):  # setup-dht logic
     list_of_sent_peers = []
+    
+    # looking for the peer that will become the leader
     found = False
-    for existing_peers in list_of_peers:  # looking for the peer that will become the leader
+    for existing_peers in list_of_peers:  
         found = peer_name in existing_peers["name"]
         if found:
             existing_peers["status"] = Leader  # updating his status
@@ -65,7 +70,7 @@ def set_up(peer_name, number_of_peers, year):  # setup-dht logic
 
     while len(list_of_sent_peers) < int(number_of_peers):
 
-        possible_peer = list_of_peers[random.randint(0, peer_count)]
+        possible_peer = list_of_peers[random.randint(0, peer_count-1)]
 
         if possible_peer["status"] == Free:
             possible_peer["status"] = InDht  # changing each peers status
@@ -118,10 +123,20 @@ def broadcast():
                 case "register":
                     resultMessage = register(parametersArray[0], parametersArray[1], parametersArray[2],
                                              parametersArray[3])
-                    manager_socket.sendto(resultMessage.encode(), (peer_address, peer_port))
+                    
+                    #Debugging Message
+                    print(resultMessage)
+
+                    pickled_message = pickle.dumps(resultMessage)
+                    manager_socket.sendto(pickled_message, (peer_address, peer_port))
                 case "setup-dht":
-                    resultMessage = set_up(parametersArray[0], parametersArray[1], parametersArray[2])
-                    manager_socket.sendto(resultMessage.encode(), (peer_address, peer_port))
+                    setup_results = set_up(parametersArray[0], parametersArray[1], parametersArray[2])
+                    serialized_result = pickle.dumps(setup_results)
+
+                    #Debugging Message
+                    print(resultMessage)
+
+                    manager_socket.sendto(serialized_result, (peer_address, peer_port))
                 case _:
                     manager_socket.sendto("invalid command".encode(), (peer_address, peer_port))
 
