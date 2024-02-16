@@ -4,7 +4,7 @@ import socket
 import threading
 import random
 import pickle
-import csv 
+import csv
 
 # Global Constants
 MANAGER_IP = "localhost"
@@ -98,8 +98,6 @@ def receive():
                 right_neighbor = list_of_dht[addr_of_right_neighbor]
 
                 # Sets the ID of each peer
-                for i in range(1, size_of_ring):
-                    set_id(list_of_dht[i], i, size_of_ring, list_of_dht)
 
                 if int(year) == 1951 or int(year) == 1952 or int(year) in range(1990, 1992):
                     with open(('storm_data\details-' + str(year) + '.csv'), 'r') as csv_file:
@@ -112,21 +110,25 @@ def receive():
                         num_of_lines_in_csv = len(csv_file_entries)
                         big_prime = next_prime_after_2l(num_of_lines_in_csv)
 
+                        for i in range(1, size_of_ring):
+                            set_id(list_of_dht[i], i, size_of_ring, list_of_dht)
+
                         for entry in csv_file_entries:
                             event_id = entry[0]
                             # Debug
                             print(event_id)
 
                             # Determining Hash Values
-                            pos = event_id % big_prime
+                            pos = int(event_id) % big_prime
+                            print(pos)
                             node_id = pos % size_of_ring
-
+                            print(node_id)
                             # If the leader is chosen from the hash above store the entry in the local hash
                             # Else send the entry to the appropriate ID using the Ring Structure
                             if node_id == identifier:
-                                local_hash_table[pos] = []
-                                local_hash_table[pos].append(entry)
-                                
+                                local_hash_table[int(pos)] = []
+                                local_hash_table[int(pos)].append(entry)
+
                                 # Debug
                                 print(local_hash_table)
                             else:
@@ -140,7 +142,7 @@ def receive():
                 size_of_ring = size
                 addr_of_right_neighbor = (identifier + 1) % size_of_ring
                 right_neighbor = neighbor[addr_of_right_neighbor]
-            
+
                 # Debugging
                 # print(identifier)
                 # print(size_of_ring)
@@ -154,17 +156,18 @@ def receive():
 
                 # a block here to check if the peer should store the record
                 command2, node_id, node_position, entry = data
-                # event_id = entry[0]
-                prime = next_prime_after_2l(event_id)
-                my_pos = event_id % prime
-                my_id = my_pos % size_of_ring
-                if node_id == my_id:
-                    local_hash_table[my_pos].append(entry)
 
+                print(identifier)
+                print(node_id)
+                if int(identifier) == node_id:
+
+                    local_hash_table[int(node_position)] = []
+                    local_hash_table[int(node_position)].append(entry)
                     # Debug
                     print(local_hash_table)
+
                 else:
-                    packet = "store", my_id, node_position, entry
+                    packet = "store", node_id, node_position, entry
                     serialized_packet = pickle.dumps(packet)
                     client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
             else:
