@@ -3,6 +3,7 @@
 import socket
 import threading
 import random
+import pickle
 
 # Port range 18,000 to 18,499
 
@@ -11,8 +12,11 @@ DEST_PORT = 9995
 SOURCE_IP = "localhost"
 SOURCE_PORT = random.randint(18000, 18499)
 ENCODER = "utf-8"
+
 SETUPBOOL = False
 identifier = 0
+MAX_UDP_SIZE = 65507 
+
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_socket.bind((SOURCE_IP, SOURCE_PORT))
@@ -32,7 +36,10 @@ def set_id(peer_tuple_data, id_number, size, full_tuple_data):
 def receive():
     while True:
         try:
-            msg, _ = client_socket.recvfrom(1024)
+
+            pickle_data, _ = client_socket.recvfrom(MAX_UDP_SIZE)
+            object = pickle.loads(pickle_data)
+            print(object)
             if SETUPBOOL:
                 info = msg.decode # this is where pickling will happen
                 size_of_ring = len(info)
@@ -43,7 +50,6 @@ def receive():
 
             else:
                 print(msg.decode())
-
         except:
             pass
 
