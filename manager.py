@@ -11,7 +11,7 @@ Free = "free"
 Leader = "leader"
 InDht = "indht"
 HOST_IP = "localhost"
-HOST_PORT = 9995
+HOST_PORT = 9999
 ENCODER = "utf-8"
 PEER_NAME_SIZE = 15
 

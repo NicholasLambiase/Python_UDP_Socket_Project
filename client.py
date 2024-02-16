@@ -8,7 +8,7 @@ import pickle
 # Port range 18,000 to 18,499
 
 DEST_IP = "localhost"
-DEST_PORT = 9995
+DEST_PORT = 9999
 SOURCE_IP = "localhost"
 SOURCE_PORT = random.randint(18000, 18499)
 ENCODER = "utf-8"
@@ -30,7 +30,8 @@ def split_the_message(full_message):
 
 
 def set_id(peer_tuple_data, id_number, size, full_tuple_data):
-    print((peer_tuple_data[1], peer_tuple_data[2]))
+    #print((peer_tuple_data[1], peer_tuple_data[2]))
+
     obj_to_send = "set-id", id_number, size, full_tuple_data
     serialized_obj = pickle.dumps(obj_to_send)
     client_socket.sendto(serialized_obj, (peer_tuple_data[1], int(peer_tuple_data[2])))  # pickle the
@@ -41,14 +42,13 @@ def set_id(peer_tuple_data, id_number, size, full_tuple_data):
 def receive():
     while True:
         try:
-
             pickle_data, _ = client_socket.recvfrom(MAX_UDP_SIZE)
             data = pickle.loads(pickle_data)
-            # print(data)
-            command1, rest = data
+            print(data)
 
             global size_of_ring
             global identifier
+            #print(SETUPBOOL)
 
             if SETUPBOOL:
                 code, list_of_dht, year = data
@@ -56,18 +56,26 @@ def receive():
                 size_of_ring = len(list_of_dht)
 
                 identifier = 0
+
                 for i in range(1, size_of_ring):
-                    # print(i)
+                    #print(i)
                     set_id(list_of_dht[i], i, size_of_ring, list_of_dht)
 
-            elif command1 == "set-id":
-                id_data, size, neighbor = rest
+            command1, id_data, size, neighbor = data
+            #print(command1)
+
+            if command1 == "set-id":
                 identifier = id_data
                 size_of_ring = size
                 addr_of_right_neighbor = (identifier + 1) % size_of_ring
                 right_neighbor = neighbor[addr_of_right_neighbor]
+                # print(identifier)
+                # print(size_of_ring)
+                # print(addr_of_right_neighbor)
+                # print(right_neighbor)
             else:
-                print(data)
+                # print(data)
+                pass
         except:
             pass
 
@@ -80,7 +88,7 @@ while True:
     command, instruction = split_the_message(message)
 
     if command == "quit":
-        exit()
+        exit(0)
     elif command == "setup-dht":
         client_socket.sendto(f"{message}".encode(), (DEST_IP, DEST_PORT))
         SETUPBOOL = True
