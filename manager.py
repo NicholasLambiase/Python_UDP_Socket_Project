@@ -26,6 +26,7 @@ peer_count = 0
 manager_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 manager_socket.bind((HOST_IP, HOST_PORT))
 
+
 # Splits the message rec
 def split_the_message(full_message):
     split_message = full_message.split(" ", 1)
@@ -52,7 +53,7 @@ def register(peer_name, ipv4_addr, m_port, p_port):
 
 def set_up(peer_name, number_of_peers, year):  # setup-dht logic
     list_of_sent_peers = []
-    
+
     # looking for the peer that will become the leader
     found = False
     if int(number_of_peers) < 3 or peer_count < int(
@@ -74,7 +75,7 @@ def set_up(peer_name, number_of_peers, year):  # setup-dht logic
 
     while len(list_of_sent_peers) < int(number_of_peers):
 
-        possible_peer = list_of_peers[random.randint(0, peer_count-1)]
+        possible_peer = list_of_peers[random.randint(0, peer_count - 1)]
 
         if possible_peer["status"] == Free:
             possible_peer["status"] = InDht  # changing each peers status
@@ -83,7 +84,6 @@ def set_up(peer_name, number_of_peers, year):  # setup-dht logic
             list_of_sent_peers.append(new_peer)  # appending it to a list
 
     return "SUCCESS", list_of_sent_peers, year  # return the code and the tuple and the year
-
 
 
 # register("nick", "127.0.0.1", "21", "91")
@@ -120,31 +120,28 @@ def broadcast():
             message, addr = messages.get()
             peer_address, peer_port = addr
 
-
             message = message.decode().strip()
-            command, parameters= split_the_message(message)
-
+            command, parameters = split_the_message(message)
 
             parameters_array = parameters.split(" ")
 
             match command:
                 case "register":
 
+                    result_message = register(parameters_array[0], parameters_array[1], parameters_array[2],
+                                              parameters_array[3])
 
-                    resultMessage = register(parametersArray[0], parametersArray[1], parametersArray[2],
-                                             parametersArray[3])
-                    
-                    #Debugging Message
-                    print(resultMessage)
+                    # Debugging Message
+                    print(result_message)
 
-                    pickled_message = pickle.dumps(resultMessage)
+                    pickled_message = pickle.dumps(result_message)
                     manager_socket.sendto(pickled_message, (peer_address, peer_port))
                 case "setup-dht":
-                    setup_results = set_up(parametersArray[0], parametersArray[1], parametersArray[2])
+                    setup_results = set_up(parameters_array[0], parameters_array[1], parameters_array[2])
                     serialized_result = pickle.dumps(setup_results)
 
-                    #Debugging Message
-                    print(resultMessage)
+                    # Debugging Message
+                    print(setup_results)
 
                     manager_socket.sendto(serialized_result, (peer_address, peer_port))
 
