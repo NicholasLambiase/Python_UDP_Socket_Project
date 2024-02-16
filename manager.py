@@ -41,8 +41,9 @@ def register(peer_name, ipv4_addr, m_port, p_port):
     new_peer = {"name": peer_name, "ipv4_addr": ipv4_addr, "m_port": m_port, "p_port": p_port, "status": Free}
 
     for existing_peer in list_of_peers:
-        if existing_peer["name"] == new_peer["name"] or existing_peer["m_port"] == new_peer["m_port"] \
-                or existing_peer["p_port"] == new_peer["p_port"]:
+        if existing_peer["name"] == new_peer["name"] or existing_peer["p_port"] == new_peer["p_port"]: # or
+            # existing_peer["m_port"] == new_peer["m_port"]
+
             return "FAILURE"
 
     list_of_peers.append(new_peer)
@@ -86,14 +87,14 @@ def set_up(peer_name, number_of_peers, year):  # setup-dht logic
     return "SUCCESS", list_of_sent_peers, year  # return the code and the tuple and the year
 
 
-# register("nick", "127.0.0.1", "21", "91")
-# register("sam", "127.0.0.2", "22", "92")
-# register("oprah", "127.0.0.3", "23", "93")
-# register("phill", "127.0.0.4", "24", "94")
-# register("liam", "127.0.0.5", "25", "95")
-# register("chris", "127.0.0.6", "26", "96")
-# register("arin", "127.0.0.7", "27", "97")
-# register("danny", "127.0.0.8", "28", "98")
+# register("nick", "localhost", "9995", str(random.randint(18000, 18499)))
+# register("sam", "localhost", "9995", str(random.randint(18000, 18499)))
+# register("oprah", "localhost", "9995", str(random.randint(18000, 18499)))
+# register("phill", "localhost", "9995", str(random.randint(18000, 18499)))
+# register("liam", "localhost", "9995", str(random.randint(18000, 18499)))
+# register("chris", "localhost", "9995", str(random.randint(18000, 18499)))
+# register("arin", "localhost", "9995", str(random.randint(18000, 18499)))
+# register("danny", "localhost", "9995", str(random.randint(18000, 18499)))
 #
 # message = set_up("nick", "3", "1955")
 #

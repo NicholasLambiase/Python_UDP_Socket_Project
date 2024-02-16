@@ -15,11 +15,13 @@ ENCODER = "utf-8"
 
 SETUPBOOL = False
 identifier = 0
-MAX_UDP_SIZE = 65507 
-
+MAX_UDP_SIZE = 65507
+size_of_ring = 0
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_socket.bind((SOURCE_IP, SOURCE_PORT))
+
+print(SOURCE_PORT)
 
 
 def split_the_message(full_message):
@@ -28,7 +30,10 @@ def split_the_message(full_message):
 
 
 def set_id(peer_tuple_data, id_number, size, full_tuple_data):
-    client_socket.sendto(f"{id_number, size}".encode(), (peer_tuple_data[1], peer_tuple_data[2])) # pickle the
+    print((peer_tuple_data[1], peer_tuple_data[2]))
+    obj_to_send = "set-id", id_number, size, full_tuple_data
+    serialized_obj = pickle.dumps(obj_to_send)
+    client_socket.sendto(serialized_obj, (peer_tuple_data[1], int(peer_tuple_data[2])))  # pickle the
     # full_tuple_data
     pass
 
@@ -38,18 +43,31 @@ def receive():
         try:
 
             pickle_data, _ = client_socket.recvfrom(MAX_UDP_SIZE)
-            object = pickle.loads(pickle_data)
-            print(object)
-            if SETUPBOOL:
-                info = msg.decode # this is where pickling will happen
-                size_of_ring = len(info)
-                global identifier
-                identifier = 0
-                for i in range(size_of_ring):
-                    set_id(info[i], i, size_of_ring, msg)
+            data = pickle.loads(pickle_data)
+            # print(data)
+            command1, rest = data
 
+            global size_of_ring
+            global identifier
+
+            if SETUPBOOL:
+                code, list_of_dht, year = data
+
+                size_of_ring = len(list_of_dht)
+
+                identifier = 0
+                for i in range(1, size_of_ring):
+                    # print(i)
+                    set_id(list_of_dht[i], i, size_of_ring, list_of_dht)
+
+            elif command1 == "set-id":
+                id_data, size, neighbor = rest
+                identifier = id_data
+                size_of_ring = size
+                addr_of_right_neighbor = (identifier + 1) % size_of_ring
+                right_neighbor = neighbor[addr_of_right_neighbor]
             else:
-                print(msg.decode())
+                print(data)
         except:
             pass
 
