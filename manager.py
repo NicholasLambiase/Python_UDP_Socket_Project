@@ -11,7 +11,7 @@ Free = "free"
 Leader = "leader"
 InDht = "indht"
 HOST_IP = "localhost"
-HOST_PORT = 9996
+HOST_PORT = 9995
 ENCODER = "utf-8"
 PEER_NAME_SIZE = 15
 
@@ -31,8 +31,8 @@ manager_socket.bind((HOST_IP, HOST_PORT))
 # print("server is up...\n")
 # print("\t\t\t===> COM Channel <===\n")
 # print("Type 'quit' to exit")
-def splitTheMessage(fullMessage):
-    command = fullMessage.split(" ", 1)
+def split_the_message(full_message):
+    command = full_message.split(" ", 1)
     return command
 
 
@@ -53,46 +53,49 @@ def register(peer_name, ipv4_addr, m_port, p_port):
 def set_up(peer_name, number_of_peers, year):  # setup-dht logic
     list_of_sent_peers = []
     found = False
-    for existing_peers in list_of_peers:  # looking for the peer that will become the leader
-        found = peer_name in existing_peers["name"]
-        if found:
-            existing_peers["status"] = Leader  # updating his status
-            new_leader = {"name": existing_peers["name"], "ipv4_addr": existing_peers["ipv4_addr"],
-                          "p_port": existing_peers["p_port"]}  # setting up the leader info
-            list_of_sent_peers.append(new_leader)  # adding the leader info
-            break
 
-    if not found or int(number_of_peers) < 3 or peer_count < int(
+    if int(number_of_peers) < 3 or peer_count < int(
             number_of_peers) or dht_setup_status:  # if the parameters
         # violate the conditions fail
         return "FAILURE"
 
+    for existing_peers in list_of_peers:  # looking for the peer that will become the leader
+        found = peer_name in existing_peers["name"]
+        if found:
+            existing_peers["status"] = Leader  # updating his status
+            new_leader = (existing_peers["name"], existing_peers["ipv4_addr"], existing_peers["p_port"])  # setting
+            # up the leader info
+            list_of_sent_peers.append(new_leader)  # adding the leader info
+            break
+
+    if not found:
+        return "FAILURE"
+
     while len(list_of_sent_peers) < int(number_of_peers):
 
-        possible_peer = list_of_peers[random.randint(0, peer_count)]
+        possible_peer = list_of_peers[random.randint(0, peer_count-1)]
 
         if possible_peer["status"] == Free:
             possible_peer["status"] = InDht  # changing each peers status
-            new_peer = {"name": possible_peer["name"], "ipv4_addr": possible_peer["ipv4_addr"],
-                        "p_port": possible_peer["p_port"]}  # creating the new dict with 3 relevant keys
+            new_peer = (possible_peer["name"], possible_peer["ipv4_addr"], possible_peer["p_port"])  # creating the
+            # new tuple with 3 values
             list_of_sent_peers.append(new_peer)  # appending it to a list
 
-    return_tuple = tuple(list_of_sent_peers)  # converting the list to a tuple
-
-    return "SUCCESS", return_tuple, year  # return the code and the tuple and the year
+    return "SUCCESS", list_of_sent_peers, year  # return the code and the tuple and the year
 
 
-# register nick 127.0.0.1 21 91
-# register sam 127.0.0.2 22 92
-# register oprah 127.0.0.3 23 93
-# register phill 127.0.0.4 24 94
-# register liam 127.0.0.5 25 95
-# register chris 127.0.0.6 26 96
-# register arin 127.0.0.7 27 97
-# register danny 127.0.0.8 28 98
-
-# set_up("nick", "3", "1955")
-
+# register("nick", "127.0.0.1", "21", "91")
+# register("sam", "127.0.0.2", "22", "92")
+# register("oprah", "127.0.0.3", "23", "93")
+# register("phill", "127.0.0.4", "24", "94")
+# register("liam", "127.0.0.5", "25", "95")
+# register("chris", "127.0.0.6", "26", "96")
+# register("arin", "127.0.0.7", "27", "97")
+# register("danny", "127.0.0.8", "28", "98")
+#
+# message = set_up("nick", "3", "1955")
+#
+# print(message)
 
 def receive():
     while True:
@@ -115,24 +118,24 @@ def broadcast():
 
             peer_address, peer_port = addr
 
+            print(peer_address, peer_port)
+
             message = message.decode().strip()
 
-            messageSplit = splitTheMessage(message)
+            command, parameters = split_the_message(message)
 
-            command, parameters = messageSplit
-
-            parametersArray = parameters.split(" ")
+            parameters_array = parameters.split(" ")
 
             match command:
                 case "register":
-                    resultMessage = register(parametersArray[0], parametersArray[1], parametersArray[2],
-                                             parametersArray[3])
+                    result_message = register(parameters_array[0], parameters_array[1], parameters_array[2],
+                                              parameters_array[3])
 
-                    manager_socket.sendto(resultMessage.encode(), (peer_address, peer_port))
+                    manager_socket.sendto(result_message.encode(), (peer_address, peer_port))
                 case "setup-dht":
-                    resultMessage = set_up(parametersArray[0], parametersArray[1], parametersArray[2])
-                    #print(resultMessage)
-                    manager_socket.sendto(resultMessage.encode(), (peer_address, peer_port))
+                    result_message = set_up(parameters_array[0], parameters_array[1], parameters_array[2])
+                    print(result_message)
+                    #manager_socket.sendto(result_message.encode(), (peer_address, peer_port))
                 case _:
                     manager_socket.sendto("invalid command".encode(), (peer_address, peer_port))
 
