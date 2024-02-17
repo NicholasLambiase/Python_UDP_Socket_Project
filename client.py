@@ -118,6 +118,9 @@ def receive():
                                 packet = "store", node_id, pos, entry
                                 serialized_packet = pickle.dumps(packet)
                                 client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
+                        
+                        # Now that all the data has been sent to each of the peers in the DHT
+                        # We will print out the number of entries per peer to the console and send the DHT
 
             if received_message[0] == "set-id" and not i_am_leader:
                 command1, id_to_assign, received_ring_size, neighbor = received_message
