@@ -1,5 +1,3 @@
-# this will be the client code
-# ur a frickin nerd sam
 import socket
 import threading
 import random
@@ -12,17 +10,18 @@ MANAGER_PORT = 9999
 MY_IP = "localhost"
 MY_PORT = random.randint(18000, 18499)
 ENCODER = "utf-8"
+MAX_UDP_SIZE = 65507
 
 # Global Variables
-i_am_leader = False
-identifier = 0
-addr_of_right_neighbor = 0
-right_neighbor = ("", 0)
-MAX_UDP_SIZE = 65507
-size_of_ring = 0
 local_hash_table = {}
 csv_file_entries = []
+i_am_leader = False
+my_identifier = 0
+size_of_ring = 0
+id_of_right_neighbor = 0
+right_neighbor = ("", "", 0)    # name , IPV4 address, port number
 
+# Setting up the Client Socket using UDP
 # Port range 18,000 to 18,499
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_socket.bind((MY_IP, MY_PORT))
@@ -53,125 +52,101 @@ def split_the_message(full_message):
     return command_to_send
 
 
-# This Function takes in a year and opens the corresponding CSV file
-# Returns a CSV File object
-def open_storm_data(year):
-    if year == 1951 or year == 1952 or year in range(1990, 1992):
-        with open(('storm_data\details-' + str(year) + '.csv'), 'r') as csv_file:
-            csv_reader = csv.reader(csv_file)
-            for entry in csv_reader:
-                print(entry)
-
-
-def set_id(peer_tuple_data, id_number, size, full_tuple_data):
-    # print((peer_tuple_data[1], peer_tuple_data[2]))
-
-    obj_to_send = "set-id", id_number, size, full_tuple_data
+def set_id(target_peer_data, id_number, ring_size, full_peer_list):
+    obj_to_send = "set-id", id_number, ring_size, full_peer_list
     serialized_obj = pickle.dumps(obj_to_send)
-    client_socket.sendto(serialized_obj, (peer_tuple_data[1], int(peer_tuple_data[2])))  # pickle the
-    # full_tuple_data
-    pass
+    client_socket.sendto(serialized_obj, (target_peer_data[1], int(target_peer_data[2])))
 
 
 def receive():
     while True:
         try:
-            pickle_data, incoming_addr = client_socket.recvfrom(MAX_UDP_SIZE)
-            data = pickle.loads(pickle_data)
-            print(data)
+            received_serialized_message, incoming_addr = client_socket.recvfrom(MAX_UDP_SIZE)
+            received_message = pickle.loads(received_serialized_message)
+            # print(received_message)
 
             global size_of_ring
-            global identifier
-            global addr_of_right_neighbor
+            global my_identifier
+            global id_of_right_neighbor
             global right_neighbor
 
-            # debug leader
-            print("I am leader is: " + str(i_am_leader))
-
             if i_am_leader:
-                code, list_of_dht, year = data
+                response_code, list_of_peers_in_ring, year = received_message
+                year = int(year)
 
                 # Setting up leader identification / Global Peer Variables
-                identifier = 0
-                size_of_ring = len(list_of_dht)
-                addr_of_right_neighbor = (identifier + 1) % size_of_ring
-                right_neighbor = list_of_dht[addr_of_right_neighbor]
+                my_identifier = 0
+                size_of_ring = len(list_of_peers_in_ring)
+                id_of_right_neighbor = (my_identifier + 1) % size_of_ring
+                right_neighbor = list_of_peers_in_ring[id_of_right_neighbor]
 
-                # Sets the ID of each peer
+                # DEBUG Checking that Peers get Registered
+                print(f"My ID: {my_identifier}")
+                print(f"ID of Right Neighbor: {id_of_right_neighbor}")
 
-                if int(year) == 1951 or int(year) == 1952 or int(year) in range(1990, 1992):
+                if year in range(1950, 1952) or year in range(1990, 1992):
                     with open(('storm_data\details-' + str(year) + '.csv'), 'r') as csv_file:
                         csv_reader = csv.reader(csv_file)
 
-                        next(csv_reader)
-                        for entry in csv_reader:
-                            csv_file_entries.append(tuple(entry))
+                        # This will copy each line in the CSV file as Tuples into a local list
+                        next(csv_reader)    # This skips the first line of the CSV File
+                        for line in csv_reader:
+                            # print(line)
+                            csv_file_entries.append(tuple(line))
 
+                        # Extracting neccesary data from our local copy of the CSV file
                         num_of_lines_in_csv = len(csv_file_entries)
                         big_prime = next_prime_after_2l(num_of_lines_in_csv)
 
-                        for i in range(1, size_of_ring):
-                            set_id(list_of_dht[i], i, size_of_ring, list_of_dht)
+                        # Setting the IDs of each user in the DHT Ring
+                        for id in range(1, size_of_ring):
+                            set_id(list_of_peers_in_ring[id], id, size_of_ring, list_of_peers_in_ring)
 
                         for entry in csv_file_entries:
-                            event_id = entry[0]
-                            # Debug
-                            print(event_id)
+                            event_id = entry[0]         # This copies the event ID number from the first index of the current entry tuple
 
                             # Determining Hash Values
                             pos = int(event_id) % big_prime
-                            print(pos)
                             node_id = pos % size_of_ring
-                            print(node_id)
+
                             # If the leader is chosen from the hash above store the entry in the local hash
                             # Else send the entry to the appropriate ID using the Ring Structure
-                            if node_id == identifier:
+                            if node_id == my_identifier:
                                 local_hash_table[int(pos)] = []
                                 local_hash_table[int(pos)].append(entry)
-
-                                # Debug
-                                print(local_hash_table)
                             else:
                                 packet = "store", node_id, pos, entry
                                 serialized_packet = pickle.dumps(packet)
                                 client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
 
-            if data[0] == "set-id" and not i_am_leader:
-                command1, id_data, size, neighbor = data
-                identifier = id_data
-                size_of_ring = size
-                addr_of_right_neighbor = (identifier + 1) % size_of_ring
-                right_neighbor = neighbor[addr_of_right_neighbor]
+            if received_message[0] == "set-id" and not i_am_leader:
+                command1, id_to_assign, received_ring_size, neighbor = received_message
+                my_identifier = int(id_to_assign)
+                size_of_ring = int(received_ring_size)
+                id_of_right_neighbor = (my_identifier + 1) % size_of_ring
+                right_neighbor = neighbor[id_of_right_neighbor]
 
-                # Debugging
-                # print(identifier)
-                # print(size_of_ring)
-                # print(addr_of_right_neighbor)
-                # print(right_neighbor)
+                # DEBUG Checking that Peers get Registered
+                print(f"My ID: {my_identifier}")
+                print(f"ID of Right Neighbor: {id_of_right_neighbor}")
 
-            if data[0] == "store" and not i_am_leader:
+            if received_message[0] == "store" and not i_am_leader:
+                command2, node_id, node_position, entry = received_message
+                node_id = int(node_id)
+                node_position = int(node_position)
 
-                # Debug for Store
-                print("I am in store")
+                if my_identifier == node_id:
+                    local_hash_table[node_position] = []
+                    local_hash_table[node_position].append(entry)
 
-                # a block here to check if the peer should store the record
-                command2, node_id, node_position, entry = data
-
-                print(identifier)
-                print(node_id)
-                if int(identifier) == node_id:
-
-                    local_hash_table[int(node_position)] = []
-                    local_hash_table[int(node_position)].append(entry)
-                    # Debug
-                    print(local_hash_table)
+                    # DEBUG Printing the entry received from a peer that was just stored
+                    # print(entry)
 
                 else:
                     packet = "store", node_id, node_position, entry
                     serialized_packet = pickle.dumps(packet)
                     client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
             else:
-                # print(data)
                 pass
         except:
             pass
@@ -188,9 +163,9 @@ while True:
         exit(0)
     elif command == "setup-dht":
         i_am_leader = True
-
-        # Debugging CSV file reader
-
         client_socket.sendto(f"{message}".encode(), (MANAGER_IP, MANAGER_PORT))
+    elif message == "print table":
+        for key, value in local_hash_table.items():
+            print(key, ":", value)
     else:
         client_socket.sendto(f"{message}".encode(), (MANAGER_IP, MANAGER_PORT))
