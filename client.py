@@ -18,6 +18,7 @@ csv_file_entries = []
 i_am_leader = False
 my_identifier = 0
 size_of_ring = 0
+node_entries_counter = []
 id_of_right_neighbor = 0
 right_neighbor = ("", "", 0)    # name , IPV4 address, port number
 
@@ -66,6 +67,7 @@ def receive():
             # print(received_message)
 
             global size_of_ring
+            global node_entries_counter
             global my_identifier
             global id_of_right_neighbor
             global right_neighbor
@@ -102,12 +104,19 @@ def receive():
                         for id in range(1, size_of_ring):
                             set_id(list_of_peers_in_ring[id], id, size_of_ring, list_of_peers_in_ring)
 
+                        # This will initialize a counter for each node in the DHT to the node_entries_counter
+                        for id in range(0, size_of_ring):
+                            node_entries_counter.insert(id, 0)
+
                         for entry in csv_file_entries:
                             event_id = entry[0]         # This copies the event ID number from the first index of the current entry tuple
 
                             # Determining Hash Values
                             pos = int(event_id) % big_prime
                             node_id = pos % size_of_ring
+
+                            # Increments the count of the node choosen to store the entry
+                            node_entries_counter[node_id] += 1
 
                             # If the leader is chosen from the hash above store the entry in the local hash
                             # Else send the entry to the appropriate ID using the Ring Structure
@@ -119,8 +128,10 @@ def receive():
                                 serialized_packet = pickle.dumps(packet)
                                 client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
                         
-                        # Now that all the data has been sent to each of the peers in the DHT
-                        # We will print out the number of entries per peer to the console and send the DHT
+                # Now that all the data has been sent to each of the peers in the DHT
+                # We will print out the number of entries per peer to the console and send the DHT
+                for index in range(0, len(node_entries_counter)):
+                    print(f"Peer ID = {index} has {node_entries_counter[index]} entries")
 
             if received_message[0] == "set-id" and not i_am_leader:
                 command1, id_to_assign, received_ring_size, neighbor = received_message
