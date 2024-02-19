@@ -83,8 +83,8 @@ def receive():
                 right_neighbor = list_of_peers_in_ring[id_of_right_neighbor]
 
                 # DEBUG Checking that Peers get Registered
-                print(f"My ID: {my_identifier}")
-                print(f"ID of Right Neighbor: {id_of_right_neighbor}")
+                # print(f"My ID: {my_identifier}")
+                # print(f"ID of Right Neighbor: {id_of_right_neighbor}")
 
                 if year in range(1950, 1952) or year in range(1990, 1992):
                     with open(('storm_data\details-' + str(year) + '.csv'), 'r') as csv_file:
@@ -108,8 +108,9 @@ def receive():
                         for id in range(0, size_of_ring):
                             node_entries_counter.insert(id, 0)
 
+                        # This copies the event ID number from the first index of the current entry tuple
                         for entry in csv_file_entries:
-                            event_id = entry[0]         # This copies the event ID number from the first index of the current entry tuple
+                            event_id = entry[0]         
 
                             # Determining Hash Values
                             pos = int(event_id) % big_prime
@@ -131,7 +132,11 @@ def receive():
                 # Now that all the data has been sent to each of the peers in the DHT
                 # We will print out the number of entries per peer to the console and send the DHT
                 for index in range(0, len(node_entries_counter)):
-                    print(f"Peer ID = {index} has {node_entries_counter[index]} entries")
+                    print(f"Peer {index} has {node_entries_counter[index]} entries")
+
+                # Send the dht-complete code to the manager to allow the it to accept incoming requests
+                dht_complete_message = "dht-complete " + list_of_peers_in_ring[0][0]
+                client_socket.sendto(dht_complete_message.encode(ENCODER), (MANAGER_IP, MANAGER_PORT))
 
             if received_message[0] == "set-id" and not i_am_leader:
                 command1, id_to_assign, received_ring_size, neighbor = received_message
@@ -141,8 +146,8 @@ def receive():
                 right_neighbor = neighbor[id_of_right_neighbor]
 
                 # DEBUG Checking that Peers get Registered
-                print(f"My ID: {my_identifier}")
-                print(f"ID of Right Neighbor: {id_of_right_neighbor}")
+                # print(f"My ID: {my_identifier}")
+                # print(f"ID of Right Neighbor: {id_of_right_neighbor}")
 
             if received_message[0] == "store" and not i_am_leader:
                 command2, node_id, node_position, entry = received_message
