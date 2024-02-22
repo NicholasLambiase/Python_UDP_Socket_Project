@@ -30,6 +30,10 @@ client_socket.bind((MY_IP, MY_PORT))
 # Debugging Purposes
 print(MY_PORT)
 
+def split_the_message(full_message):
+    parsed_mssg_list = full_message.split(" ")
+    return parsed_mssg_list
+
 
 def is_prime(num):
     if num < 2:
@@ -46,11 +50,6 @@ def next_prime_after_2l(file_size):
         if is_prime(num):
             return num
         num += 2
-
-
-def split_the_message(full_message):
-    command_to_send = full_message.split(" ", 1)
-    return command_to_send
 
 
 def set_id(target_peer_data, id_number, ring_size, full_peer_list):
@@ -135,8 +134,8 @@ def receive():
                     print(f"Peer {index} has {node_entries_counter[index]} entries")
 
                 # Send the dht-complete code to the manager to allow the it to accept incoming requests
-                dht_complete_message = "dht-complete " + list_of_peers_in_ring[0][0]
-                client_socket.sendto(dht_complete_message.encode(ENCODER), (MANAGER_IP, MANAGER_PORT))
+                dht_complete_message = "dht-complete", list_of_peers_in_ring[0][0]
+                client_socket.sendto(pickle.dumps(dht_complete_message), (MANAGER_IP, MANAGER_PORT))
 
             if received_message[0] == "set-id" and not i_am_leader:
                 command1, id_to_assign, received_ring_size, neighbor = received_message
@@ -176,15 +175,20 @@ t.start()
 
 while True:
     message = input("")
-    command, instruction = split_the_message(message)
+    mssg_list = split_the_message(message)
 
-    if command == "quit":
+    # DEBUG mssg_list[0] = command and the list that is being sent
+    print(mssg_list)
+
+    if message == "quit":
         exit(0)
-    elif command == "setup-dht":
+    elif mssg_list[0] == "register":
+        client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
+    elif mssg_list[0] == "setup-dht":
         i_am_leader = True
-        client_socket.sendto(f"{message}".encode(), (MANAGER_IP, MANAGER_PORT))
+        client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
     elif message == "print table":
         for key, value in local_hash_table.items():
             print(key, ":", value)
     else:
-        client_socket.sendto(f"{message}".encode(), (MANAGER_IP, MANAGER_PORT))
+        print("Please enter a valid command")

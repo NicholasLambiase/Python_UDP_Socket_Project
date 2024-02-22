@@ -96,29 +96,32 @@ def broadcast():
             # The first parsed string of the message sent by the peer will be the command
             # All following parsed strings are parameters that will be passed to the command
 
-            message, addr = messages.get()
+            serialized_message, addr = messages.get()
             peer_address, peer_port = addr
 
-            message = message.decode().strip()
-            command, parameters = split_the_message(message)
+            # Unpickle the data received. The format will be a list with index 0 as the command 
+            # all following elements are command parameters
+            message = pickle.loads(serialized_message)
+            command = message[0]
 
-            parameters_array = parameters.split(" ")
+            # DEBUG Checking to see if the pickled message was received
+            print(f"Manager has entered '{command}'")
 
             if command == "register":
-                result_message = register(parameters_array[0], parameters_array[1], parameters_array[2],
-                                            parameters_array[3])
+                result_message = register(message[1], message[2], message[3],
+                                            message[4])
                 print(result_message)
                 pickled_message = pickle.dumps(result_message)
                 manager_socket.sendto(pickled_message, (peer_address, peer_port))
 
             elif command == "setup-dht":
-                setup_results = setup_dht(parameters_array[0], parameters_array[1], parameters_array[2])                
+                setup_results = setup_dht(message[1], message[2], message[3])                
                 serialized_result = pickle.dumps(setup_results)
                 manager_socket.sendto(serialized_result, (peer_address, peer_port))
 
             elif command == "dht-complete": 
                 for peer in list_of_peers:
-                    if peer["status"] == Leader and peer["name"] == parameters_array[0]:
+                    if peer["status"] == Leader and peer["name"] == message[1]:
                         print("dht-complete")
 
             else:
