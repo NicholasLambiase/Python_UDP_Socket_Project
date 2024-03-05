@@ -16,9 +16,10 @@ PEER_NAME_SIZE = 15
 # Global
 messages = queue.Queue()
 list_of_peers = []
+peers_in_dht = []
 dht_setup_status = False
 peer_count = 0
-
+big_prime = 0
 # Setting Up the Socket
 # Port range 18,000 to 18,499
 manager_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -48,7 +49,8 @@ def register(peer_name, ipv4_addr, m_port, p_port):
 
 
 def setup_dht(peer_name, number_of_peers, year):  # setup-dht logic
-    peers_in_dht = []
+    global dht_setup_status
+    global peers_in_dht
 
     # Minimum Conditions for a DHT to be set up
     if int(number_of_peers) < 3 or peer_count < int(number_of_peers) or dht_setup_status:
@@ -57,7 +59,7 @@ def setup_dht(peer_name, number_of_peers, year):  # setup-dht logic
     # Find the peer that requested the setup_dht and make them the Leader
     # Append the Leader entry to the peers_in_dht as the first index of the list
     found_leader = False
-    for existing_peers in list_of_peers:  
+    for existing_peers in list_of_peers:
         found_leader = peer_name in existing_peers["name"]
         if found_leader:
             existing_peers["status"] = Leader
@@ -77,6 +79,7 @@ def setup_dht(peer_name, number_of_peers, year):  # setup-dht logic
             new_peer = (possible_peer["name"], possible_peer["ipv4_addr"], possible_peer["p_port"])
             peers_in_dht.append(new_peer)
 
+    dht_setup_status = True
     return "SUCCESS", peers_in_dht, year  # return SUCCESS, the list of dht peers, and year
 
 
@@ -90,6 +93,7 @@ def receive():
 
 
 def broadcast():
+    global big_prime
     while True:
         while not messages.empty():
             # We will Parse the message we received to determine the command sent by the peer
@@ -109,20 +113,42 @@ def broadcast():
 
             if command == "register":
                 result_message = register(message[1], message[2], message[3],
-                                            message[4])
+                                          message[4])
                 print(result_message)
                 pickled_message = pickle.dumps(result_message)
                 manager_socket.sendto(pickled_message, (peer_address, peer_port))
 
             elif command == "setup-dht":
-                setup_results = setup_dht(message[1], message[2], message[3])                
+                setup_results = setup_dht(message[1], message[2], message[3])
                 serialized_result = pickle.dumps(setup_results)
                 manager_socket.sendto(serialized_result, (peer_address, peer_port))
 
-            elif command == "dht-complete": 
+            elif command == "dht-complete":
                 for peer in list_of_peers:
                     if peer["status"] == Leader and peer["name"] == message[1]:
                         print("dht-complete")
+                big_prime = message[2]
+
+            elif command == "query-dht":
+                if not dht_setup_status:
+                    print("FAILURE")
+                else:
+                    peer_to_query = message[1]
+                    print(peer_to_query)
+                    if_peer_is_in = False
+                    for peer in list_of_peers:
+
+                        if peer["name"] == peer_to_query and (peer["status"] == Free):
+                            if_peer_is_in = True
+                    if not if_peer_is_in:
+                        print("FAILURE")
+                    else:
+                        query_peer = peers_in_dht[random.randint(0, len(peers_in_dht) - 1)]
+                        print(query_peer)
+                        msg_to_send = "query", "SUCCESS", query_peer, big_prime
+                        manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
+            elif command == "quit":
+                exit(0)
 
             else:
                 manager_socket.sendto("invalid command".encode(), (peer_address, peer_port))
