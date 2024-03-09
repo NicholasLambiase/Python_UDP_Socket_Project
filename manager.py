@@ -158,13 +158,36 @@ def broadcast():
                 print(peer_to_leave)
                 if_peer_is_in = False
                 for peer in list_of_peers:
-                    if peer["name"] == peer_to_leave and (peer["status"] == InDht):
+                    if peer["name"] == peer_to_leave and (peer["status"] == InDht or peer["status"] == Leader):
                         if_peer_is_in = True
 
                 if not dht_setup_status or not if_peer_is_in:
                     print("FAILURE")
 
                 leaving_peer = peer_to_leave
+
+            elif command == "deregister":
+
+                peer_to_deregister = message[1]
+                print(peer_to_deregister)
+                if_peer_is_in = False
+                for peer in list_of_peers:
+                    if peer["name"] == peer_to_deregister and (peer["status"] == InDht or peer["status"] == Leader):
+                        if_peer_is_in = True
+                if if_peer_is_in:
+                    print("FAILURE")
+                else:
+                    for peer in list_of_peers:
+                        if peer["name"] == peer_to_deregister:
+                            rip_peer = {"name": peer["name"], "ipv4_addr": peer["ipv4_addr"], "m_port": peer["m_port"],
+                                        "p_port": peer["p_port"],
+                                        "status": peer["status"]}
+                            list_of_peers.remove(rip_peer)
+                            msg_to_send = "deregister", "SUCCESS"
+                            manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
+
+
+
 
             elif command == "quit":
                 exit(0)

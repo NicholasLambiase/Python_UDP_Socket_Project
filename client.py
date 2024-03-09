@@ -83,6 +83,12 @@ def receive():
             global id_seq
             global peer_list
 
+            if received_message[0] == "deregister":
+                code = received_message[1]
+                if code == "SUCCESS":
+                    print(code)
+                    quit(0)
+
             if received_message[0] == "query":
                 # print(received_message[1])
                 peer_to_query = received_message[2]
@@ -257,6 +263,9 @@ while True:
         my_info = MY_IP, MY_PORT
         event_msg = mssg_list, my_info, big_prime, id_seq
         client_socket.sendto(pickle.dumps(event_msg), (peer_to_query[1], int(peer_to_query[2])))
+    elif mssg_list[0] == "deregister":
+        client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
+        quit(0)
     elif message == "print table":
         for key, value in local_hash_table.items():
             print(key, ":", value)
