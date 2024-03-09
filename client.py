@@ -25,6 +25,9 @@ peer_to_query = ("", "", 0)  # name, IPV4 address, port number
 big_prime = 0
 id_seq = []
 peer_list = []
+list_of_peers_in_ring = []
+leave_condition = False
+year = 0
 # Setting up the Client Socket using UDP
 # Port range 18,000 to 18,499
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -82,6 +85,91 @@ def receive():
             global big_prime
             global id_seq
             global peer_list
+            global local_hash_table
+            global leave_condition
+            global list_of_peers_in_ring
+            global i_am_leader
+            global year
+
+            if received_message[0] == "dht-rebuilt":
+                send = "dht-rebuilt", "filler"
+                client_socket.sendto(pickle.dumps(send), (MANAGER_IP, MANAGER_PORT))
+
+            if received_message[0] == "reset-id":
+                command1, id_to_assign, received_ring_size, neighbors, return_ip, return_port = received_message
+                if not leave_condition:
+
+                    my_identifier = int(id_to_assign)
+                    i_am_leader = False
+                    if my_identifier == 0:
+                        i_am_leader = True
+
+                    size_of_ring = int(received_ring_size)
+                    print(size_of_ring)
+                    id_of_right_neighbor = (my_identifier + 1) % size_of_ring
+                    print(id_of_right_neighbor)
+                    right_neighbor = neighbors[id_of_right_neighbor]
+                    print(right_neighbor)
+                    peer_list = neighbors
+                    print(peer_list)
+                    id_to_assign = int(id_to_assign)
+                    id_to_assign = id_to_assign + 1
+                    print(id_to_assign)
+                    if id_to_assign >= size_of_ring:
+                        msg = "reset-id", id_to_assign, size_of_ring, peer_list, return_ip, return_port
+                        client_socket.sendto(pickle.dumps(msg), (return_ip, int(return_port)))
+                    else:
+                        reset_message = "reset-id", id_to_assign, size_of_ring, peer_list, return_ip, return_port
+                        client_socket.sendto(pickle.dumps(reset_message), (right_neighbor[1], int(right_neighbor[2])))
+                else:
+                    rebuild_command = "rebuild-dht", "SUCCESS", neighbors, year
+                    client_socket.sendto(pickle.dumps(rebuild_command), (right_neighbor[1], int(right_neighbor[2])))
+
+            if received_message[0] == "leave":
+                leave_condition = True
+                teardown_message = "teardown", "partial_leaving", received_message[1]
+
+                serialized_packet = pickle.dumps(teardown_message)
+
+                client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
+
+            if received_message[0] == "teardown-dht" and i_am_leader:
+                teardown_message = "teardown", "complete"
+
+                serialized_packet = pickle.dumps(teardown_message)
+
+                client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
+
+            if received_message[0] == "teardown":
+                if received_message[1] == "complete":
+                    local_hash_table = {}
+                    if not i_am_leader:
+                        serialized_packet = pickle.dumps(received_message)
+                        client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
+                    else:
+                        packet = "teardown-complete", "SUCCESS"
+                        serialized_packet = pickle.dumps(packet)
+                        client_socket.sendto(serialized_packet, (MANAGER_IP, MANAGER_PORT))
+
+                if received_message[1] == "partial_leaving":
+                    local_hash_table = {}
+                    if not leave_condition:
+
+                        serialized_packet = pickle.dumps(received_message)
+                        client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
+                    else:
+                        # command1, id_to_assign, received_ring_size, neighbors
+
+                        size_of_new_ring = (size_of_ring - 1)
+
+                        for peer in list_of_peers_in_ring:
+
+                            if peer[0] == received_message[2]:
+                                leaving_peer = (peer[0], peer[1], peer[2])
+                                list_of_peers_in_ring.remove(leaving_peer)
+                        print(list_of_peers_in_ring)
+                        reset_message = "reset-id", 0, size_of_new_ring, list_of_peers_in_ring, MY_IP, MY_PORT
+                        client_socket.sendto(pickle.dumps(reset_message), (right_neighbor[1], int(right_neighbor[2])))
 
             if received_message[0] == "deregister":
                 code = received_message[1]
@@ -137,8 +225,8 @@ def receive():
                     client_socket.sendto(pickle.dumps(next_query_message),
                                          (next_query_node[1], int(next_query_node[2])))
 
-            if received_message[0] == "setup-dht" and i_am_leader:
-                response_code, list_of_peers_in_ring, year = received_message
+            if (received_message[0] == "setup-dht" or received_message[0] == "rebuild-dht") and i_am_leader:
+                message1, response_code, list_of_peers_in_ring, year = received_message
                 year = int(year)
 
                 # Setting up leader identification / Global Peer Variables
@@ -200,9 +288,13 @@ def receive():
                     for index in range(0, len(node_entries_counter)):
                         print(f"Peer {index} has {node_entries_counter[index]} entries")
 
-                    # Send the dht-complete code to the manager to allow the it to accept incoming requests
-                    dht_complete_message = "dht-complete", list_of_peers_in_ring[0][0], big_prime
-                    client_socket.sendto(pickle.dumps(dht_complete_message), (MANAGER_IP, MANAGER_PORT))
+                    # Send the dht-complete code to the manager to allow it to accept incoming requests
+                    if message1 == "setup-dht":
+                        dht_complete_message = "dht-complete", list_of_peers_in_ring[0][0], big_prime
+                        client_socket.sendto(pickle.dumps(dht_complete_message), (MANAGER_IP, MANAGER_PORT))
+                    elif message1 == "rebuild-dht":
+                        dht_complete_message = "dht-rebuilt", list_of_peers_in_ring[0][0], big_prime
+                        client_socket.sendto(pickle.dumps(dht_complete_message), (peer_address, int(peer_port)))
 
             elif received_message[0] == "set-id" and not i_am_leader:
                 command1, id_to_assign, received_ring_size, neighbors = received_message
@@ -233,21 +325,8 @@ def receive():
                     serialized_packet = pickle.dumps(packet)
                     client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
 
-            
-            if received_message[0] == "teardown-dht" and i_am_leader:
-                teardown_message = "teardown"
-                serialized_packet = pickle.dumps(teardown_message)
-                client_socket.sendto(serialized_packet, (right_neighbor[1], right_neighbor[2]))
 
-            if received_message == "teardown":
-                    local_hash_table = {}
-                    if not i_am_leader:
-                        serialized_packet = pickle.dumps(received_message)
-                        client_socket.sendto(serialized_packet, (right_neighbor[1], right_neighbor[2]))
-                    else:
-                        serialized_packet = pickle.dumps("teardown-complete")
-                        client_socket.sendto(serialized_packet, (MANAGER_IP, MANAGER_PORT))
-                        
+
 
         except:
             pass
@@ -277,16 +356,21 @@ while True:
         my_info = MY_IP, MY_PORT
         event_msg = mssg_list, my_info, big_prime, id_seq
         client_socket.sendto(pickle.dumps(event_msg), (peer_to_query[1], int(peer_to_query[2])))
+    elif mssg_list[0] == "teardown-dht":
+        client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
     elif mssg_list[0] == "deregister":
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
         quit(0)
+    elif mssg_list[0] == "leave-dht":
+        client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
+
     elif message == "print table":
         for key, value in local_hash_table.items():
             print(key, ":", value)
     # shortcuts
     elif message == "s":
         i_am_leader = True
-        mssg_list = "setup-dht", "client" + str(MY_PORT), "6", "1992"
+        mssg_list = "setup-dht", "client" + str(MY_PORT), "5", "1992"
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
     elif message == "q":
         mssg_list = "query-dht", "client" + str(MY_PORT)

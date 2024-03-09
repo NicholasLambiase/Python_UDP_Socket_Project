@@ -159,6 +159,11 @@ def broadcast():
                     print("FAILURE")
 
                 leaving_peer = peer_to_leave
+                leave_msg = "leave", leaving_peer, "SUCCESS"
+                manager_socket.sendto(pickle.dumps(leave_msg), (peer_address, peer_port))
+
+            elif command == "dht-rebuilt":
+                print("SUCCESS")
 
             elif command == "deregister":
 
@@ -179,6 +184,7 @@ def broadcast():
                             list_of_peers.remove(rip_peer)
                             msg_to_send = "deregister", "SUCCESS"
                             manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
+
             elif command == "teardown-dht":
                 leader_found = False
                 for peer in list_of_peers:
@@ -187,8 +193,10 @@ def broadcast():
                 if not leader_found:
                     print("FAILURE")
                 else:
-                    serialized_message = pickle.dumps("teardown-dht")
+                    msg = "teardown-dht", "SUCCESS"
+                    serialized_message = pickle.dumps(msg)
                     manager_socket.sendto(serialized_message, (peer_address, int(peer_port)))
+
             elif command == "teardown-complete":
                 print("SUCCESS")
 
