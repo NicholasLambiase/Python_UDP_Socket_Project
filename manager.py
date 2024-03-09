@@ -22,6 +22,7 @@ peer_count = 0
 big_prime = 0
 leaving_peer = ""
 joining_peer = ""
+peer_to_join = ()
 # Setting Up the Socket
 # Port range 18,000 to 18,499
 manager_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -89,7 +90,7 @@ def receive():
 
 
 def broadcast():
-    global big_prime
+    global big_prime, peer_to_join
     global leaving_peer
     global joining_peer
     while True:
@@ -161,6 +162,20 @@ def broadcast():
                 leaving_peer = peer_to_leave
                 leave_msg = "leave", leaving_peer, "SUCCESS"
                 manager_socket.sendto(pickle.dumps(leave_msg), (peer_address, peer_port))
+
+            elif command == "join-dht":
+                if not dht_setup_status:
+                    print("FAILURE")
+                for peer in list_of_peers:
+                    if peer["name"] == message[1] and peer["status"] != Free:
+                        print("FAILURE")
+                for peer in list_of_peers:
+                    if peer["name"] == message[1]:
+                        peer_to_join = (peer["name"], peer["ipv4_addr"], peer["p_port"])
+
+                joining_peer = message[1]
+                msg = "join", peer_to_join, peers_in_dht, "SUCCESS"
+                manager_socket.sendto(pickle.dumps(msg), (peer_address, peer_port))
 
             elif command == "dht-rebuilt":
                 print("SUCCESS")
