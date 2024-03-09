@@ -21,7 +21,7 @@ size_of_ring = 0
 node_entries_counter = []
 id_of_right_neighbor = 0
 right_neighbor = ("", "", 0)  # name , IPV4 address, port number
-peer_to_query = ("", "", 0)  # name, IPV$ address, port number
+peer_to_query = ("", "", 0)  # name, IPV4 address, port number
 big_prime = 0
 id_seq = []
 peer_list = []
@@ -105,7 +105,7 @@ def receive():
                 if query_id == my_identifier:
                     try:
                         value_to_compare = local_hash_table[query_pos]
-                        
+
                         if value_to_compare[0][0] == event_id:
                             query_message = "SUCCESS", local_hash_table[query_pos], id_seq
                             client_socket.sendto(pickle.dumps(query_message), (original_add[0], int(original_add[1])))
@@ -263,7 +263,7 @@ while True:
     # shortcuts
     elif message == "s":
         i_am_leader = True
-        mssg_list = "setup-dht", "client" + str(MY_PORT), "3", "1952"
+        mssg_list = "setup-dht", "client" + str(MY_PORT), "6", "1992"
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
     elif message == "q":
         mssg_list = "query-dht", "client" + str(MY_PORT)

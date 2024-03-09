@@ -20,6 +20,8 @@ peers_in_dht = []
 dht_setup_status = False
 peer_count = 0
 big_prime = 0
+leaving_peer = ""
+joining_peer = ""
 # Setting Up the Socket
 # Port range 18,000 to 18,499
 manager_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -94,6 +96,8 @@ def receive():
 
 def broadcast():
     global big_prime
+    global leaving_peer
+    global joining_peer
     while True:
         while not messages.empty():
             # We will Parse the message we received to determine the command sent by the peer
@@ -147,6 +151,21 @@ def broadcast():
                         print(query_peer)
                         msg_to_send = "query", "SUCCESS", query_peer, big_prime
                         manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
+
+            elif command == "leave-dht":
+
+                peer_to_leave = message[1]
+                print(peer_to_leave)
+                if_peer_is_in = False
+                for peer in list_of_peers:
+                    if peer["name"] == peer_to_leave and (peer["status"] == InDht):
+                        if_peer_is_in = True
+
+                if not dht_setup_status or not if_peer_is_in:
+                    print("FAILURE")
+
+                leaving_peer = peer_to_leave
+
             elif command == "quit":
                 exit(0)
 
