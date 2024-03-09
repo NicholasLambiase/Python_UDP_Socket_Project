@@ -28,12 +28,6 @@ manager_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 manager_socket.bind((HOST_IP, HOST_PORT))
 
 
-# Splits the message rec
-def split_the_message(full_message):
-    split_message = full_message.split(" ", 1)
-    return split_message
-
-
 def register(peer_name, ipv4_addr, m_port, p_port):
     # Create new peer Dict element
     new_peer = {"name": peer_name, "ipv4_addr": ipv4_addr, "m_port": m_port, "p_port": p_port, "status": Free}
@@ -82,7 +76,7 @@ def setup_dht(peer_name, number_of_peers, year):  # setup-dht logic
             peers_in_dht.append(new_peer)
 
     dht_setup_status = True
-    return "SUCCESS", peers_in_dht, year  # return SUCCESS, the list of dht peers, and year
+    return "setup-dht", "SUCCESS", peers_in_dht, year  # return SUCCESS, the list of dht peers, and year
 
 
 def receive():
@@ -185,9 +179,18 @@ def broadcast():
                             list_of_peers.remove(rip_peer)
                             msg_to_send = "deregister", "SUCCESS"
                             manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
-
-
-
+            elif command == "teardown-dht":
+                leader_found = False
+                for peer in list_of_peers:
+                    if peer["name"] == message[1] and peer["status"] == Leader:
+                        leader_found = True
+                if not leader_found:
+                    print("FAILURE")
+                else:
+                    serialized_message = pickle.dumps("teardown-dht")
+                    manager_socket.sendto(serialized_message, (peer_address, int(peer_port)))
+            elif command == "teardown-complete":
+                print("SUCCESS")
 
             elif command == "quit":
                 exit(0)

@@ -137,7 +137,7 @@ def receive():
                     client_socket.sendto(pickle.dumps(next_query_message),
                                          (next_query_node[1], int(next_query_node[2])))
 
-            if i_am_leader:
+            if received_message[0] == "setup-dht" and i_am_leader:
                 response_code, list_of_peers_in_ring, year = received_message
                 year = int(year)
 
@@ -233,8 +233,22 @@ def receive():
                     serialized_packet = pickle.dumps(packet)
                     client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
 
-            else:
-                pass
+            
+            if received_message[0] == "teardown-dht" and i_am_leader:
+                teardown_message = "teardown"
+                serialized_packet = pickle.dumps(teardown_message)
+                client_socket.sendto(serialized_packet, (right_neighbor[1], right_neighbor[2]))
+
+            if received_message == "teardown":
+                    local_hash_table = {}
+                    if not i_am_leader:
+                        serialized_packet = pickle.dumps(received_message)
+                        client_socket.sendto(serialized_packet, (right_neighbor[1], right_neighbor[2]))
+                    else:
+                        serialized_packet = pickle.dumps("teardown-complete")
+                        client_socket.sendto(serialized_packet, (MANAGER_IP, MANAGER_PORT))
+                        
+
         except:
             pass
 
