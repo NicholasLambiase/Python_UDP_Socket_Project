@@ -46,7 +46,6 @@ def split_the_message(full_message):
     parsed_mssg_list = full_message.split(" ")
     return parsed_mssg_list
 
-
 def is_prime(num):
     if num < 2:
         return False
@@ -54,7 +53,6 @@ def is_prime(num):
         if num % i == 0:
             return False
     return True
-
 
 def next_prime_after_2l(file_size):
     num = 2 * file_size + 1
@@ -64,8 +62,8 @@ def next_prime_after_2l(file_size):
         num += 2
 
 
-def set_id(target_peer_data, id_number, ring_size, full_peer_list, year):
-    obj_to_send = "set-id", id_number, ring_size, full_peer_list, year
+def set_id(target_peer_data, id_number, ring_size, full_peer_list):
+    obj_to_send = "set-id", id_number, ring_size, full_peer_list
     serialized_obj = pickle.dumps(obj_to_send)
     client_socket.sendto(serialized_obj, (target_peer_data[1], int(target_peer_data[2])))
 
@@ -88,7 +86,6 @@ def receive():
 
             if received_message[0] == "reset-id":
                 command1, id_to_assign, received_ring_size, neighbors, return_ip, return_port, year = received_message
-
                 if not leave_condition:
 
                     my_identifier = int(id_to_assign)
@@ -126,9 +123,9 @@ def receive():
             if received_message[0] == "leave":
                 # Received Message Format
                 # ("leave", leaving_peer_name , "SUCCESS")
-
+                
                 leave_condition = True
-                teardown_message = "teardown", "partial_leaving", received_message[1], year
+                teardown_message = "teardown", "partial_leaving", received_message[1]
 
                 serialized_packet = pickle.dumps(teardown_message)
                 client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
@@ -171,16 +168,14 @@ def receive():
                         # command1, id_to_assign, received_ring_size, neighbors
                         size_of_new_ring = (size_of_ring - 1)
 
-                        print(peer_list)
-
-                        for peer in peer_list:
+                        for peer in list_of_peers_in_ring:
 
                             if peer[0] == received_message[2]:
                                 leaving_peer = (peer[0], peer[1], peer[2])
-                                peer_list.remove(leaving_peer)  # failing
+                                list_of_peers_in_ring.remove(leaving_peer)
 
-                        print(peer_list)
-                        reset_message = "reset-id", 0, size_of_new_ring, peer_list, MY_IP, MY_PORT, year
+                        print(list_of_peers_in_ring)
+                        reset_message = "reset-id", 0, size_of_new_ring, list_of_peers_in_ring, MY_IP, MY_PORT, year
                         client_socket.sendto(pickle.dumps(reset_message), (right_neighbor[1], int(right_neighbor[2])))
 
                 if received_message[1] == "joining":
@@ -256,13 +251,13 @@ def receive():
 
                     next_peer_id = random.choice(eye_list)
                     print(next_peer_id)
-
+                    
                     query_message_p = "find-event", event_id
                     next_query_node = peer_list[next_peer_id]
-
+                    
                     # (["find-event", "event-id"], (my_ipv4_addr, my_ipv4_port), big_prime, id_seq[])
                     next_query_message = query_message_p, original_add, prime, id_seq
-
+                    
                     client_socket.sendto(pickle.dumps(next_query_message),
                                          (next_query_node[1], int(next_query_node[2])))
 
@@ -300,7 +295,7 @@ def receive():
 
                         # Setting the IDs of each user in the DHT Ring
                         for entry_id in range(1, size_of_ring):
-                            set_id(list_of_peers_in_ring[entry_id], entry_id, size_of_ring, list_of_peers_in_ring, year)
+                            set_id(list_of_peers_in_ring[entry_id], entry_id, size_of_ring, list_of_peers_in_ring)
 
                         # This will initialize a counter for each node in the DHT to the node_entries_counter
                         for entry_id in range(0, size_of_ring):
@@ -344,7 +339,7 @@ def receive():
                         client_socket.sendto(pickle.dumps(dht_complete_message), (peer_address, int(peer_port)))
 
             elif received_message[0] == "set-id" and not i_am_leader:
-                command1, id_to_assign, received_ring_size, neighbors, year = received_message
+                command1, id_to_assign, received_ring_size, neighbors = received_message
                 my_identifier = int(id_to_assign)
                 size_of_ring = int(received_ring_size)
                 id_of_right_neighbor = (my_identifier + 1) % size_of_ring
@@ -389,49 +384,49 @@ while True:
     if message == "quit":
         print("bye bye")
         exit(1)
-
+    
     elif mssg_list[0] == "register":
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
-
+    
     elif mssg_list[0] == "setup-dht":
         i_am_leader = True
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
-
+    
     elif mssg_list[0] == "query-dht":
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
-
+    
     elif mssg_list[0] == "find-event":
         my_info = MY_IP, MY_PORT
         # MESSAGE FORMAT
         # (["find-event", "event-id"], (my_ipv4_addr, my_ipv4_port), big_prime, id_seq[])
         event_msg = mssg_list, my_info, big_prime, id_seq
         client_socket.sendto(pickle.dumps(event_msg), (peer_to_query[1], int(peer_to_query[2])))
-
+    
     elif mssg_list[0] == "teardown-dht":
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
-
+    
     elif mssg_list[0] == "deregister":
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
         quit(0)
-
+    
     elif mssg_list[0] == "leave-dht":
         # ("leave-dht", client_name, right_neighbor_name)
         mssg_list.append(right_neighbor[0])
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
-
+    
     elif mssg_list[0] == "join-dht":
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
 
     elif message == "print table":
         for key, value in local_hash_table.items():
             print(key, ":", value)
-
+    
     # shortcuts
     elif message == "s":
         i_am_leader = True
-        mssg_list = "setup-dht", "client" + str(MY_PORT), "4", "1992"
+        mssg_list = "setup-dht", "client" + str(MY_PORT), "3", "1992"
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
-
+    
     elif message == "q":
         mssg_list = "query-dht", "client" + str(MY_PORT)
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))

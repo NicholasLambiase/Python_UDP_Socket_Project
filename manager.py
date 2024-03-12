@@ -154,7 +154,6 @@ def broadcast():
                 
                 # Search the DHT to ensure that the client is a member
                 if_peer_is_in = False
-                in_dht_entry_to_remove = ()
                 for peer in list_of_peers:
                     if peer["name"] == peer_to_leave and (peer["status"] == InDht or peer["status"] == Leader):
                         if_peer_is_in = True
