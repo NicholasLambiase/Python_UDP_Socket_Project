@@ -227,3 +227,20 @@ t2 = threading.Thread(target=broadcast)
 
 t1.start()
 t2.start()
+
+while True:
+    message = input("")
+
+    if message == "p":
+        print("\nlist_of_peers:")
+        for peers in list_of_peers:
+            if peers["status"] == InDht:
+                print(f"InDHT:\t{peers}")
+            elif peers["status"] == Free:
+                print(f"Free:\t{peers}")
+            else:
+                print(f"Leader:\t{peers}")
+
+        print("\npeers_in_dht:")
+        for peers in peers_in_dht:
+            print(peers[0])

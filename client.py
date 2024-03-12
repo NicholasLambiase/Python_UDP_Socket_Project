@@ -416,6 +416,10 @@ while True:
     elif message == "q":
         mssg_list = "query-dht", "client" + str(MY_PORT)
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
+    elif message == "p":
+        print("My Peer Name is: client" + str(MY_PORT) + "\n")
+        for peers in peer_list:
+            print(peers[0])
 
     else:
         print("Please enter a valid command")
