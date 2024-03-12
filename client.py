@@ -410,7 +410,8 @@ while True:
         quit(0)
     
     elif mssg_list[0] == "leave-dht":
-        # ("leave-dht", client_name)
+        # ("leave-dht", client_name, right_neighbor_name)
+        mssg_list.append(right_neighbor[0])
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
     
     elif mssg_list[0] == "join-dht":

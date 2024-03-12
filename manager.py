@@ -147,8 +147,9 @@ def broadcast():
                         manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
 
             elif command == "leave-dht":
-                # MESSAGE FORMAT    ("leave-dht", "client_name")
+                # MESSAGE FORMAT    ("leave-dht", "client_name", "new_leader_name")
                 peer_to_leave = message[1]
+                new_leader = message[2]
                 print(peer_to_leave)
                 
                 # Search the DHT to ensure that the client is a member
@@ -168,6 +169,13 @@ def broadcast():
                 # Remove the peer leaving from peers_in_dht
                 peers_in_dht.remove(in_dht_entry_to_remove)
 
+                # Change the Peers Status to Free and update the new leader
+                for peers in list_of_peers:
+                    if peers["name"] == peer_to_leave:
+                        peers["status"] = Free
+                    elif peers["name"] == new_leader:
+                        peers["status"] == Leader
+
             elif command == "join-dht":
                 if not dht_setup_status:
                     print("FAILURE")
@@ -184,9 +192,10 @@ def broadcast():
                 # Append the newly joining peer to peers_in_dht
                 peers_in_dht.append(peer_to_join)
 
-                #debug
-                print("This is the list of the peers in the DHT after someone joins")
-                print(peers_in_dht)
+                # Change the joining peer's status to InDHT
+                for peers in list_of_peers:
+                    if peers["name"] == peer_to_join[0]:
+                        peers["status"] = InDht
 
             elif command == "dht-rebuilt":
                 print("SUCCESS")
