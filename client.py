@@ -64,8 +64,8 @@ def next_prime_after_2l(file_size):
         num += 2
 
 
-def set_id(target_peer_data, id_number, ring_size, full_peer_list):
-    obj_to_send = "set-id", id_number, ring_size, full_peer_list
+def set_id(target_peer_data, id_number, ring_size, full_peer_list, year):
+    obj_to_send = "set-id", id_number, ring_size, full_peer_list, year
     serialized_obj = pickle.dumps(obj_to_send)
     client_socket.sendto(serialized_obj, (target_peer_data[1], int(target_peer_data[2])))
 
@@ -169,13 +169,13 @@ def receive():
 
                         size_of_new_ring = (size_of_ring - 1)
 
-                        for peer in list_of_peers_in_ring:
+                        for peer in peer_list:
 
                             if peer[0] == received_message[2]:
                                 leaving_peer = (peer[0], peer[1], peer[2])
-                                list_of_peers_in_ring.remove(leaving_peer)
-                        print(list_of_peers_in_ring)
-                        reset_message = "reset-id", 0, size_of_new_ring, list_of_peers_in_ring, MY_IP, MY_PORT, year
+                                peer_list.remove(leaving_peer)
+                        print(peer_list)
+                        reset_message = "reset-id", 0, size_of_new_ring, peer_list, MY_IP, MY_PORT, year
                         client_socket.sendto(pickle.dumps(reset_message), (right_neighbor[1], int(right_neighbor[2])))
 
                 if received_message[1] == "joining":
@@ -292,7 +292,7 @@ def receive():
 
                         # Setting the IDs of each user in the DHT Ring
                         for entry_id in range(1, size_of_ring):
-                            set_id(list_of_peers_in_ring[entry_id], entry_id, size_of_ring, list_of_peers_in_ring)
+                            set_id(list_of_peers_in_ring[entry_id], entry_id, size_of_ring, list_of_peers_in_ring, year)
 
                         # This will initialize a counter for each node in the DHT to the node_entries_counter
                         for entry_id in range(0, size_of_ring):
@@ -336,7 +336,7 @@ def receive():
                         client_socket.sendto(pickle.dumps(dht_complete_message), (peer_address, int(peer_port)))
 
             elif received_message[0] == "set-id" and not i_am_leader:
-                command1, id_to_assign, received_ring_size, neighbors = received_message
+                command1, id_to_assign, received_ring_size, neighbors, year = received_message
                 my_identifier = int(id_to_assign)
                 size_of_ring = int(received_ring_size)
                 id_of_right_neighbor = (my_identifier + 1) % size_of_ring
@@ -411,7 +411,7 @@ while True:
     # shortcuts
     elif message == "s":
         i_am_leader = True
-        mssg_list = "setup-dht", "client" + str(MY_PORT), "3", "1992"
+        mssg_list = "setup-dht", "client" + str(MY_PORT), "4", "1992"
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
     elif message == "q":
         mssg_list = "query-dht", "client" + str(MY_PORT)
