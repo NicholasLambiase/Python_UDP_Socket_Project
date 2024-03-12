@@ -21,7 +21,6 @@ dht_setup_status = False
 peer_count = 0
 big_prime = 0
 leaving_peer = ""
-joining_peer = ""
 peer_to_join = ()
 # Setting Up the Socket
 # Port range 18,000 to 18,499
@@ -92,7 +91,6 @@ def receive():
 def broadcast():
     global big_prime, peer_to_join
     global leaving_peer
-    global joining_peer
     while True:
         while not messages.empty():
             # We will Parse the message we received to determine the command sent by the peer
@@ -109,10 +107,10 @@ def broadcast():
 
             # DEBUG Checking to see if the pickled message was received
             print(f"Manager has entered '{command}'")
+            print(f"Message Received {message}")
 
             if command == "register":
-                result_message = register(message[1], message[2], message[3],
-                                          message[4])
+                result_message = register(message[1], message[2], message[3], message[4])
                 print(result_message)
                 pickled_message = pickle.dumps(result_message)
                 manager_socket.sendto(pickled_message, (peer_address, peer_port))
@@ -135,10 +133,11 @@ def broadcast():
                     peer_to_query = message[1]
                     print(peer_to_query)
                     if_peer_is_in = False
-                    for peer in list_of_peers:
 
+                    for peer in list_of_peers:
                         if peer["name"] == peer_to_query and (peer["status"] == Free):
                             if_peer_is_in = True
+
                     if not if_peer_is_in:
                         print("FAILURE")
                     else:
@@ -148,13 +147,16 @@ def broadcast():
                         manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
 
             elif command == "leave-dht":
-
+                # MESSAGE FORMAT    ("leave-dht", "client_name")
                 peer_to_leave = message[1]
                 print(peer_to_leave)
+                
+                # Search the DHT to ensure that the client is a member
                 if_peer_is_in = False
                 for peer in list_of_peers:
                     if peer["name"] == peer_to_leave and (peer["status"] == InDht or peer["status"] == Leader):
                         if_peer_is_in = True
+                        in_dht_entry_to_remove = (peer["name"], peer["ipv4_addr"], peer["p_port"])
 
                 if not dht_setup_status or not if_peer_is_in:
                     print("FAILURE")
@@ -162,6 +164,9 @@ def broadcast():
                 leaving_peer = peer_to_leave
                 leave_msg = "leave", leaving_peer, "SUCCESS"
                 manager_socket.sendto(pickle.dumps(leave_msg), (peer_address, peer_port))
+                
+                # Remove the peer leaving from peers_in_dht
+                peers_in_dht.remove(in_dht_entry_to_remove)
 
             elif command == "join-dht":
                 if not dht_setup_status:
@@ -173,9 +178,15 @@ def broadcast():
                     if peer["name"] == message[1]:
                         peer_to_join = (peer["name"], peer["ipv4_addr"], peer["p_port"])
 
-                joining_peer = message[1]
                 msg = "join", peer_to_join, peers_in_dht, "SUCCESS"
                 manager_socket.sendto(pickle.dumps(msg), (peer_address, peer_port))
+
+                # Append the newly joining peer to peers_in_dht
+                peers_in_dht.append(peer_to_join)
+
+                #debug
+                print("This is the list of the peers in the DHT after someone joins")
+                print(peers_in_dht)
 
             elif command == "dht-rebuilt":
                 print("SUCCESS")
@@ -227,3 +238,20 @@ t2 = threading.Thread(target=broadcast)
 
 t1.start()
 t2.start()
+
+while True:
+    message = input("")
+
+    if message == "p":
+        print("\nlist_of_peers:")
+        for peers in list_of_peers:
+            if peers["status"] == InDht:
+                print(f"InDHT:\t{peers}")
+            elif peers["status"] == Free:
+                print(f"Free:\t{peers}")
+            else:
+                print(f"Leader:\t{peers}")
+
+        print("\npeers_in_dht:")
+        for peers in peers_in_dht:
+            print(peers[0])
