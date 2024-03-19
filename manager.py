@@ -150,10 +150,12 @@ def broadcast():
             elif command == "leave-dht":
 
                 peer_to_leave = message[1]
-                print(peer_to_leave)
+                new_leader = message[2]
+                
                 if_peer_is_in = False
                 for peer in list_of_peers:
                     if peer["name"] == peer_to_leave and (peer["status"] == InDht or peer["status"] == Leader):
+                        in_dht_entry_to_remove = (peer["name"], peer["ipv4_addr"], peer["p_port"])
                         if_peer_is_in = True
 
                 if not dht_setup_status or not if_peer_is_in:
@@ -162,6 +164,24 @@ def broadcast():
                 leaving_peer = peer_to_leave
                 leave_msg = "leave", leaving_peer, "SUCCESS"
                 manager_socket.sendto(pickle.dumps(leave_msg), (peer_address, peer_port))
+
+                # Remove the peer leaving from peers_in_dht
+                peers_in_dht.remove(in_dht_entry_to_remove)
+
+                # Change the leaving Peer's Status to Free and update the new leader status of the new leader and the old leader
+                for peers in list_of_peers:
+                    print(f"Peer being checked: {peers}")
+                    if peers["name"] == peer_to_leave:
+                        print("Peer leaving found. Status set to free\n\n")
+                        peers["status"] = Free
+                    
+                    if peers["name"] == new_leader:
+                        print("New Leader Found. Status set to Leader\n\n")
+                        peers["status"] = Leader
+                    
+                    if peers["status"] == Leader and peers["name"] != new_leader and peers["name"] != peer_to_leave:
+                        print("Updating the Status of the old leader to InDHT.\n\n")
+                        peers["status"] = InDht
 
             elif command == "join-dht":
                 if not dht_setup_status:
@@ -176,6 +196,16 @@ def broadcast():
                 joining_peer = message[1]
                 msg = "join", peer_to_join, peers_in_dht, "SUCCESS"
                 manager_socket.sendto(pickle.dumps(msg), (peer_address, peer_port))
+
+                # Append the newly joining peer to peers_in_dht
+                peers_in_dht.append(peer_to_join)
+
+                # Change the joining peer's status to InDHT
+                for peers in list_of_peers:
+                    print(f"Peer being checked: {peers}")
+                    if peers["name"] == peer_to_join[0]:
+                        print("Found the joining peer. Updating his status to InDHT\n\n")
+                        peers["status"] = InDht
 
             elif command == "dht-rebuilt":
                 print("SUCCESS")
