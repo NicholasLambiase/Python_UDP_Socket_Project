@@ -88,8 +88,8 @@ def receive():
 
             if received_message[0] == "reset-id":
                 command1, id_to_assign, received_ring_size, neighbors, return_ip, return_port, year = received_message
-                if not leave_condition:
 
+                if not leave_condition:
                     my_identifier = int(id_to_assign)
                     i_am_leader = False
                     if my_identifier == 0:
@@ -106,6 +106,8 @@ def receive():
 
                     id_to_assign = int(id_to_assign)
                     id_to_assign = id_to_assign + 1
+
+                    print("this is my right neighbour: " + str(right_neighbor[2]))
 
                     if id_to_assign >= size_of_ring:
                         if not join_condition:
@@ -170,7 +172,6 @@ def receive():
                         size_of_new_ring = (size_of_ring - 1)
 
                         for peer in peer_list:
-
                             if peer[0] == received_message[2]:
                                 leaving_peer = (peer[0], peer[1], peer[2])
                                 peer_list.remove(leaving_peer)
@@ -276,7 +277,7 @@ def receive():
                 # print(f"My ID: {my_identifier}")
                 # print(f"ID of Right Neighbor: {id_of_right_neighbor}")
 
-                if year in range(1949, 1953) or year in range(1989, 1993):
+                if year in range(1949, 1953) or year in range(1989, 1997):
                     with open(('storm_data\details-' + str(year) + '.csv'), 'r') as csv_file:
                         csv_reader = csv.reader(csv_file)
 
@@ -412,7 +413,7 @@ while True:
     # shortcuts
     elif message == "s":
         i_am_leader = True
-        mssg_list = "setup-dht", "client" + str(MY_PORT), "4", "1992"
+        mssg_list = "setup-dht", "client" + str(MY_PORT), "5", "1996"
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
     elif message == "q":
         mssg_list = "query-dht", "client" + str(MY_PORT)

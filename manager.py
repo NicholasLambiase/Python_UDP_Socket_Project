@@ -23,6 +23,7 @@ big_prime = 0
 leaving_peer = ""
 joining_peer = ""
 peer_to_join = ()
+in_dht_entry_to_remove = ()
 # Setting Up the Socket
 # Port range 18,000 to 18,499
 manager_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -90,7 +91,7 @@ def receive():
 
 
 def broadcast():
-    global big_prime, peer_to_join
+    global big_prime, peer_to_join, in_dht_entry_to_remove
     global leaving_peer
     global joining_peer
     while True:
@@ -169,19 +170,21 @@ def broadcast():
                 peers_in_dht.remove(in_dht_entry_to_remove)
 
                 # Change the leaving Peer's Status to Free and update the new leader status of the new leader and the old leader
-                for peers in list_of_peers:
-                    print(f"Peer being checked: {peers}")
-                    if peers["name"] == peer_to_leave:
+                for peer in list_of_peers:
+                    print(f"Peer being checked: {peer}")
+                    if peer["name"] == peer_to_leave:
                         print("Peer leaving found. Status set to free\n\n")
-                        peers["status"] = Free
-                    
-                    if peers["name"] == new_leader:
-                        print("New Leader Found. Status set to Leader\n\n")
-                        peers["status"] = Leader
-                    
-                    if peers["status"] == Leader and peers["name"] != new_leader and peers["name"] != peer_to_leave:
+                        peer["status"] = Free
+
+                    if peer["status"] == Leader and peer["name"] != new_leader and peer["name"] != peer_to_leave:
                         print("Updating the Status of the old leader to InDHT.\n\n")
-                        peers["status"] = InDht
+                        peer["status"] = InDht
+                    
+                    if peer["name"] == new_leader:
+                        print("New Leader Found. Status set to Leader\n\n")
+                        peer["status"] = Leader
+                    
+
 
             elif command == "join-dht":
                 if not dht_setup_status:
