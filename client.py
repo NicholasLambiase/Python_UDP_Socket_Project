@@ -94,11 +94,13 @@ def receive():
                     i_am_leader = False
                     if my_identifier == 0:
                         i_am_leader = True
+                    else:
+                        i_am_leader = False
 
                     size_of_ring = int(received_ring_size)
 
                     id_of_right_neighbor = (my_identifier + 1) % size_of_ring
-                    print(id_of_right_neighbor)
+                    print(f"This is the new ID of my Right Neighbor: {id_of_right_neighbor}")
 
                     right_neighbor = neighbors[id_of_right_neighbor]
 
@@ -125,11 +127,11 @@ def receive():
                     client_socket.sendto(pickle.dumps(rebuild_command), (right_neighbor[1], int(right_neighbor[2])))
 
             if received_message[0] == "leave":
+                # This means that I am the peer leaving the DHT
                 leave_condition = True
+
                 teardown_message = "teardown", "partial_leaving", received_message[1]
-
                 serialized_packet = pickle.dumps(teardown_message)
-
                 client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
 
             if received_message[0] == "join":
@@ -162,19 +164,19 @@ def receive():
 
                 if received_message[1] == "partial_leaving":
                     local_hash_table = {}
-                    if not leave_condition:
-
+                    if not leave_condition:     # If I am in the DHT and not leaving
                         serialized_packet = pickle.dumps(received_message)
                         client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
-                    else:
-                        # command1, id_to_assign, received_ring_size, neighbors
-
+                    else:   # I am the client that is leaving 
+                        # message = ("teardown", "partial-leaving", "client_name_leaving") AND leave-conditions is TRUE
                         size_of_new_ring = (size_of_ring - 1)
 
+                        # Remove the Peer that is leaving from the peer_list
                         for peer in peer_list:
                             if peer[0] == received_message[2]:
                                 leaving_peer = (peer[0], peer[1], peer[2])
                                 peer_list.remove(leaving_peer)
+                        
                         print(peer_list)
                         reset_message = "reset-id", 0, size_of_new_ring, peer_list, MY_IP, MY_PORT, year
                         client_socket.sendto(pickle.dumps(reset_message), (right_neighbor[1], int(right_neighbor[2])))

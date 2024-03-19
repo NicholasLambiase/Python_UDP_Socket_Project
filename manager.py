@@ -149,7 +149,7 @@ def broadcast():
                         manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
 
             elif command == "leave-dht":
-
+                # message = ("leave-dht", "client_name_leaving", "new_leader_name")
                 peer_to_leave = message[1]
                 new_leader = message[2]
                 
