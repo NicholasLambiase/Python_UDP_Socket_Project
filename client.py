@@ -76,7 +76,8 @@ def receive():
             received_serialized_message, incoming_addr = client_socket.recvfrom(MAX_UDP_SIZE)
             received_message = pickle.loads(received_serialized_message)
             peer_address, peer_port = incoming_addr
-            print(received_message)
+            if received_message[0] != "store":
+                print(received_message)
 
             global size_of_ring, node_entries_counter, my_identifier, id_of_right_neighbor, right_neighbor, \
                 peer_to_query, big_prime, id_seq, peer_list, local_hash_table, leave_condition, list_of_peers_in_ring, \
@@ -89,7 +90,7 @@ def receive():
             if received_message[0] == "reset-id":
                 command1, id_to_assign, received_ring_size, neighbors, return_ip, return_port, year = received_message
 
-                if not leave_condition:
+                if not leave_condition:  # fix this for already left peers
                     my_identifier = int(id_to_assign)
                     i_am_leader = False
                     if my_identifier == 0:
@@ -102,26 +103,36 @@ def receive():
                     id_of_right_neighbor = (my_identifier + 1) % size_of_ring
                     print(f"This is the new ID of my Right Neighbor: {id_of_right_neighbor}")
 
-                    right_neighbor = neighbors[id_of_right_neighbor]
+                    # right_neighbor = neighbors[id_of_right_neighbor]
+                    # need new system for assigning right neighbor
 
                     peer_list = neighbors
 
                     id_to_assign = int(id_to_assign)
                     id_to_assign = id_to_assign + 1
+                    if id_to_assign > 10:
+                        print("stop")
+                        quit(0)
 
-                    print("this is my right neighbour: " + str(right_neighbor[2]))
+                    print("this is my old right neighbour: " + str(right_neighbor[2]))
+                    print("this is my new right neighbour: " + str(neighbors[id_of_right_neighbor][2]))
+                    print("this is the assign id: " + str(id_to_assign))
+                    print("this is the size of ring: " + str(size_of_ring))
 
                     if id_to_assign >= size_of_ring:
+                        print("do i get here?")
                         if not join_condition:
+                            print("in here")
                             msg = "reset-id", id_to_assign, size_of_ring, peer_list, return_ip, return_port, year
                             client_socket.sendto(pickle.dumps(msg), (return_ip, int(return_port)))
                         else:
+                            print("or in here")
                             rebuild_command = "rebuild-dht", "SUCCESS", neighbors, year
                             client_socket.sendto(pickle.dumps(rebuild_command),
-                                                 (right_neighbor[1], int(right_neighbor[2])))
+                                                 (neighbors[id_of_right_neighbor][1], int(neighbors[id_of_right_neighbor][2])))
                     else:
                         reset_message = "reset-id", id_to_assign, size_of_ring, peer_list, return_ip, return_port, year
-                        client_socket.sendto(pickle.dumps(reset_message), (right_neighbor[1], int(right_neighbor[2])))
+                        client_socket.sendto(pickle.dumps(reset_message), (right_neighbor[1], int(neighbors[id_of_right_neighbor][2])))
                 else:
                     rebuild_command = "rebuild-dht", "SUCCESS", neighbors, year
                     client_socket.sendto(pickle.dumps(rebuild_command), (right_neighbor[1], int(right_neighbor[2])))
@@ -164,10 +175,10 @@ def receive():
 
                 if received_message[1] == "partial_leaving":
                     local_hash_table = {}
-                    if not leave_condition:     # If I am in the DHT and not leaving
+                    if not leave_condition:  # If I am in the DHT and not leaving
                         serialized_packet = pickle.dumps(received_message)
                         client_socket.sendto(serialized_packet, (right_neighbor[1], int(right_neighbor[2])))
-                    else:   # I am the client that is leaving 
+                    else:  # I am the client that is leaving
                         # message = ("teardown", "partial-leaving", "client_name_leaving") AND leave-conditions is TRUE
                         size_of_new_ring = (size_of_ring - 1)
 
@@ -176,7 +187,7 @@ def receive():
                             if peer[0] == received_message[2]:
                                 leaving_peer = (peer[0], peer[1], peer[2])
                                 peer_list.remove(leaving_peer)
-                        
+
                         print(peer_list)
                         reset_message = "reset-id", 0, size_of_new_ring, peer_list, MY_IP, MY_PORT, year
                         client_socket.sendto(pickle.dumps(reset_message), (right_neighbor[1], int(right_neighbor[2])))
@@ -294,8 +305,9 @@ def receive():
                         big_prime = next_prime_after_2l(num_of_lines_in_csv)
 
                         # Setting the IDs of each user in the DHT Ring
-                        for entry_id in range(1, size_of_ring):
-                            set_id(list_of_peers_in_ring[entry_id], entry_id, size_of_ring, list_of_peers_in_ring, year)
+                        if received_message[0] == "setup-dht":
+                            for entry_id in range(1, size_of_ring):
+                                set_id(peer_list[entry_id], entry_id, size_of_ring, peer_list, year)
 
                         # This will initialize a counter for each node in the DHT to the node_entries_counter
                         for entry_id in range(0, size_of_ring):
@@ -422,6 +434,7 @@ while True:
         client_socket.sendto(pickle.dumps(mssg_list), (MANAGER_IP, MANAGER_PORT))
     elif message == "p":
         print("My Peer Name is: client" + str(MY_PORT) + "\n")
+        print("My ID is: " + str(my_identifier) + "\n")
         for peers in peer_list:
             print(peers[0])
 

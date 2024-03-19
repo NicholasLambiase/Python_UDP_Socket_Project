@@ -152,7 +152,7 @@ def broadcast():
                 # message = ("leave-dht", "client_name_leaving", "new_leader_name")
                 peer_to_leave = message[1]
                 new_leader = message[2]
-                
+
                 if_peer_is_in = False
                 for peer in list_of_peers:
                     if peer["name"] == peer_to_leave and (peer["status"] == InDht or peer["status"] == Leader):
@@ -179,12 +179,10 @@ def broadcast():
                     if peer["status"] == Leader and peer["name"] != new_leader and peer["name"] != peer_to_leave:
                         print("Updating the Status of the old leader to InDHT.\n\n")
                         peer["status"] = InDht
-                    
+
                     if peer["name"] == new_leader:
                         print("New Leader Found. Status set to Leader\n\n")
                         peer["status"] = Leader
-                    
-
 
             elif command == "join-dht":
                 if not dht_setup_status:
@@ -197,6 +195,7 @@ def broadcast():
                         peer_to_join = (peer["name"], peer["ipv4_addr"], peer["p_port"])
 
                 joining_peer = message[1]
+
                 msg = "join", peer_to_join, peers_in_dht, "SUCCESS"
                 manager_socket.sendto(pickle.dumps(msg), (peer_address, peer_port))
 
