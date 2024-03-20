@@ -112,39 +112,58 @@ def broadcast():
             print(f"Manager has entered '{command}'")
 
             if command == "register":
+                print(f"Received the register Command from: {message[1]}")
                 result_message = register(message[1], message[2], message[3],
                                           message[4])
-                print(result_message)
+                
+                #Print the result of the register function
+                if result_message == "SUCCESS":
+                    print(f"Registered {message[1]} as a Free peer")
+                    print("SUCCESS\n\n")
+                else:
+                    print(f"{message[1]} was not registered")
+                    print("FAILURE\n\n")
+
+                # Send the result message back to the peer
                 pickled_message = pickle.dumps(result_message)
                 manager_socket.sendto(pickled_message, (peer_address, peer_port))
 
             elif command == "setup-dht":
                 setup_results = setup_dht(message[1], message[2], message[3])
+
+                #Print the result of setup-dht
+                if setup_results[0] == "setup-dht":
+                    print(f"Setting up a DHT of size '{message[2]}' with '{setup_results[2][0][0]}' as the Leader\n\n")
+
                 serialized_result = pickle.dumps(setup_results)
                 manager_socket.sendto(serialized_result, (peer_address, peer_port))
 
             elif command == "dht-complete":
                 for peer in list_of_peers:
                     if peer["status"] == Leader and peer["name"] == message[1]:
-                        print("dht-complete")
+                        print("dht-complete\n\n")
                 big_prime = message[2]
 
             elif command == "query-dht":
                 if not dht_setup_status:
-                    print("FAILURE")
+                    print("A DHT has not been set up yet...")
+                    print("FAILURE\n\n")
                 else:
                     peer_to_query = message[1]
-                    print(peer_to_query)
+                    print(f"Peer '{peer_to_query}' is trying to query the DHT")
+                    
                     if_peer_is_in = False
                     for peer in list_of_peers:
-
                         if peer["name"] == peer_to_query and (peer["status"] == Free):
                             if_peer_is_in = True
+
                     if not if_peer_is_in:
-                        print("FAILURE")
+                        print("The Peer trying to query does not have a status of 'Free'")
+                        print("FAILURE\n\n")
                     else:
                         query_peer = peers_in_dht[random.randint(0, len(peers_in_dht) - 1)]
-                        print(query_peer)
+                        print(f"Beginning the Hot Potato query from '{query_peer[0]}'\n\n")
+
                         msg_to_send = "query", "SUCCESS", query_peer, big_prime
                         manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
 
@@ -152,6 +171,7 @@ def broadcast():
                 # message = ("leave-dht", "client_name_leaving", "new_leader_name")
                 peer_to_leave = message[1]
                 new_leader = message[2]
+                print(f"Peer {peer_to_leave} is trying to leave the DHT")
                 
                 if_peer_is_in = False
                 for peer in list_of_peers:
@@ -160,7 +180,13 @@ def broadcast():
                         if_peer_is_in = True
 
                 if not dht_setup_status or not if_peer_is_in:
-                    print("FAILURE")
+                    if not dht_setup_status:
+                        print("The DHT is not setup")
+                    else:
+                        print(f"The Peer '{peer_to_leave}' is not in the DHT")
+                    print("FAILURE\n\n")
+
+                print(f"The peer '{peer_to_leave}' is in the DHT\nSending 'leave' command\n\n")
 
                 leaving_peer = peer_to_leave
                 leave_msg = "leave", leaving_peer, "SUCCESS"
@@ -171,30 +197,36 @@ def broadcast():
 
                 # Change the leaving Peer's Status to Free and update the new leader status of the new leader and the old leader
                 for peer in list_of_peers:
-                    print(f"Peer being checked: {peer}")
+                    # print(f"Peer being checked: {peer}")
                     if peer["name"] == peer_to_leave:
-                        print("Peer leaving found. Status set to free\n\n")
+                        # print("Peer leaving found. Status set to free\n\n")
                         peer["status"] = Free
 
                     if peer["status"] == Leader and peer["name"] != new_leader and peer["name"] != peer_to_leave:
-                        print("Updating the Status of the old leader to InDHT.\n\n")
+                        # print("Updating the Status of the old leader to InDHT.\n\n")
                         peer["status"] = InDht
                     
                     if peer["name"] == new_leader:
-                        print("New Leader Found. Status set to Leader\n\n")
+                        # print("New Leader Found. Status set to Leader\n\n")
                         peer["status"] = Leader
                     
 
-
             elif command == "join-dht":
                 if not dht_setup_status:
+                    print("The DHT is not setup")
                     print("FAILURE")
+                
                 for peer in list_of_peers:
                     if peer["name"] == message[1] and peer["status"] != Free:
+                        print(f"Peer {message[1]} is registered, but status is not 'Free'")
                         print("FAILURE")
+                
                 for peer in list_of_peers:
                     if peer["name"] == message[1]:
                         peer_to_join = (peer["name"], peer["ipv4_addr"], peer["p_port"])
+
+                print(f"Peer '{message[1]}' status is 'Free'. Approved to join the DHT")
+                print("SUCCESS\n\n")
 
                 joining_peer = message[1]
                 msg = "join", peer_to_join, peers_in_dht, "SUCCESS"
@@ -205,24 +237,26 @@ def broadcast():
 
                 # Change the joining peer's status to InDHT
                 for peers in list_of_peers:
-                    print(f"Peer being checked: {peers}")
+                    # print(f"Peer being checked: {peers}")
                     if peers["name"] == peer_to_join[0]:
-                        print("Found the joining peer. Updating his status to InDHT\n\n")
+                        # print("Found the joining peer. Updating his status to InDHT\n\n")
                         peers["status"] = InDht
 
             elif command == "dht-rebuilt":
-                print("SUCCESS")
+                print("dht-rebuilt'")
+                print("SUCCESS\n\n")
 
             elif command == "deregister":
-
                 peer_to_deregister = message[1]
-                print(peer_to_deregister)
+        
                 if_peer_is_in = False
                 for peer in list_of_peers:
                     if peer["name"] == peer_to_deregister and (peer["status"] == InDht or peer["status"] == Leader):
                         if_peer_is_in = True
+                
                 if if_peer_is_in:
-                    print("FAILURE")
+                    print(f"The Peer '{peer_to_deregister}' is in the DHT. Cannot deregister")
+                    print("FAILURE\n\n")
                 else:
                     for peer in list_of_peers:
                         if peer["name"] == peer_to_deregister:
@@ -230,6 +264,10 @@ def broadcast():
                                         "p_port": peer["p_port"],
                                         "status": peer["status"]}
                             list_of_peers.remove(rip_peer)
+                            
+                            print(f"Peer {peer_to_deregister} has deregistered")
+                            print("SUCCESS\n\n")
+                            
                             msg_to_send = "deregister", "SUCCESS"
                             manager_socket.sendto(pickle.dumps(msg_to_send), (peer_address, peer_port))
 
@@ -238,15 +276,21 @@ def broadcast():
                 for peer in list_of_peers:
                     if peer["name"] == message[1] and peer["status"] == Leader:
                         leader_found = True
+                
                 if not leader_found:
-                    print("FAILURE")
+                    print(f"Peer '{message[1]}' initiating teardown-dht does not have status 'Leader'")
+                    print("FAILURE\n\n")
                 else:
+                    print(f"Peer {message[1]} is initiating teardown-dht")
+                    print("SUCCESS\n\n")
+
                     msg = "teardown-dht", "SUCCESS"
                     serialized_message = pickle.dumps(msg)
                     manager_socket.sendto(serialized_message, (peer_address, int(peer_port)))
 
             elif command == "teardown-complete":
-                print("SUCCESS")
+                print("DHT torn down")
+                print("SUCCESS\n\n")
 
             elif command == "quit":
                 exit(0)

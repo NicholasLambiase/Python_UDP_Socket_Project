@@ -76,13 +76,27 @@ def receive():
             received_serialized_message, incoming_addr = client_socket.recvfrom(MAX_UDP_SIZE)
             received_message = pickle.loads(received_serialized_message)
             peer_address, peer_port = incoming_addr
-            print(received_message)
+            
 
             global size_of_ring, node_entries_counter, my_identifier, id_of_right_neighbor, right_neighbor, \
                 peer_to_query, big_prime, id_seq, peer_list, local_hash_table, leave_condition, list_of_peers_in_ring, \
                 i_am_leader, year, join_condition, csv_file_entries
 
+
+            # Finding who sent me a message
+            who_i_received_from = ""
+            if peer_port == MANAGER_PORT:
+                who_i_received_from = "Manager"
+            else:
+                for peer in peer_list:
+                    if peer[2] == peer_port:
+                        who_i_received_from = peer[0]
+
+            if received_message[0] != "store" and received_message[0] != "set-id":
+                print(f"Client received '{received_message[0]}' from {who_i_received_from}")
+
             if received_message[0] == "dht-rebuilt":
+                print("Sending 'dht-rebuilt' to the Manager")
                 send = "dht-rebuilt", "filler"
                 client_socket.sendto(pickle.dumps(send), (MANAGER_IP, MANAGER_PORT))
 
@@ -345,6 +359,8 @@ def receive():
                 id_of_right_neighbor = (my_identifier + 1) % size_of_ring
                 right_neighbor = neighbors[id_of_right_neighbor]
                 peer_list = neighbors
+
+                print(f"Client received '{received_message[0]}' from {peer_list[0][0]}")
 
                 # DEBUG Checking that Peers get Registered
                 # print(f"My ID: {my_identifier}")
