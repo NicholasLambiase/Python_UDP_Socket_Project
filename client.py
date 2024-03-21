@@ -261,7 +261,7 @@ def receive():
             if received_message[0] == "deregister":
                 code = received_message[1]
                 if code == "SUCCESS":
-                    print(code)
+                    print("\nTerminating Client Process...\n")
                     quit(0)
 
             if received_message[0] == "query":
@@ -516,5 +516,6 @@ while True:
         print("My Peer Name is: client" + str(MY_PORT) + "\n")
         for peers in peer_list:
             print(peers[0])
+        print("\n")
     else:
         print("Please enter a valid command")

@@ -288,6 +288,11 @@ def broadcast():
                     serialized_message = pickle.dumps(msg)
                     manager_socket.sendto(serialized_message, (peer_address, int(peer_port)))
 
+                    # Change the joining peer's status to InDHT
+                    for peers in list_of_peers:
+                        peers["status"] = Free
+
+
             elif command == "teardown-complete":
                 print("DHT torn down")
                 print("SUCCESS\n\n")
@@ -321,3 +326,6 @@ while True:
         print("\npeers_in_dht:")
         for peers in peers_in_dht:
             print(peers[0])
+        print("\n")
+    elif message == "quit":
+        print("Terminating Manager Explicitly\n")
