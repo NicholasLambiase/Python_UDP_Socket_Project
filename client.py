@@ -336,7 +336,7 @@ def receive():
                 # print(f"ID of Right Neighbor: {id_of_right_neighbor}")
 
                 if year in range(1949, 1953) or year in range(1989, 1997):
-                    with open(('storm_data\details-' + str(year) + '.csv'), 'r') as csv_file:
+                    with open(('details-1996' + str(year) + '.csv'), 'r') as csv_file:
                         csv_reader = csv.reader(csv_file)
 
                         # This will copy each line in the CSV file as Tuples into a local list
